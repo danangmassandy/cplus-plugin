@@ -9,6 +9,8 @@ import os
 import uuid
 
 import datetime
+import time
+import json
 
 from pathlib import Path
 
@@ -40,7 +42,7 @@ from qgis.core import (
 
 from qgis import processing
 
-from .conf import settings_manager, Settings
+from .conf import settings_manager, Settings, UUIDEncoder
 
 from .resources import *
 
@@ -111,7 +113,71 @@ class ScenarioAnalysisTask(QgsTask):
         """Runs the main scenario analysis task operations"""
 
         base_dir = settings_manager.get_value(Settings.BASE_DIR)
-
+        input_dict = {
+            "scenario_name": self.scenario.name,
+            "scenario_desc": self.scenario.description,
+            "extent": self.analysis_extent.bbox,
+            "priority_layers": settings_manager.get_priority_layers(),
+            "priority_layer_groups": self.analysis_priority_layers_groups,
+            "implementation_models": [],
+        }
+        log("**********TEST**********\n")
+        log("***im***\n")
+        for model in self.analysis_implementation_models:
+            im_model_dict = {
+                "uuid": str(model.uuid),
+                "name": model.name,
+                "description": model.description,
+                "path": model.path,
+                "layer_type": model.layer_type,
+                "user_defined": model.user_defined,
+                "pathways": [],
+                "priority_layers": model.priority_layers,
+                "layer_styles": model.layer_styles,
+            }
+            log(f"model UUID: {model.uuid}\n")
+            log(f"model name: {model.name}\n")
+            log(f"path: {model.path}\n")
+            log(f"layer_type: {model.layer_type}\n")
+            log(f"user_defined: {model.user_defined}\n")
+            log(f"pathways: {len(model.pathways)}\n")
+            for pathway in model.pathways:
+                log(f"pathway name: {pathway.name}\n")
+                log(f"pathway path: {pathway.path}\n")
+                log(f"pathway carbon_paths: {len(pathway.carbon_paths)}\n")
+                log(f"pathway layer_type: {pathway.layer_type}\n")
+                im_model_dict["pathways"].append(
+                    {
+                        "uuid": str(pathway.uuid),
+                        "name": pathway.name,
+                        "description": pathway.description,
+                        "path": pathway.path,
+                        "layer_type": pathway.layer_type,
+                        "carbon_paths": pathway.carbon_paths,
+                    }
+                )
+            log(f"priority_layers: {len(model.priority_layers)}\n")
+            for priority_layer in model.priority_layers:
+                if priority_layer:
+                    log(f"priority_layer: {list(priority_layer.keys())}")
+                    log(f"is_selected: {priority_layer['selected']}")
+                    log(f"name: {priority_layer['name']}")
+                    log(f"uuid: {priority_layer['uuid']}")
+                    log(f"path: {priority_layer['path']}")
+            log(f"layer_styles: {len(model.layer_styles)}\n")
+            input_dict["implementation_models"].append(im_model_dict)
+        # log("***priority layer***\n")
+        # log(f"{priority_layer_str}\n")
+        log("***scenario***\n")
+        log(f"analysis_scenario_name: {self.scenario.name}\n")
+        log(f"analysis_scenario_description: {self.scenario.description}\n")
+        log(f"extent: {self.scenario.extent}\n")
+        log(f"models: {len(self.scenario.models)}\n")
+        log(f"weighted_models: {len(self.scenario.weighted_models)}\n")
+        log(f"priority_layer_groups: {len(self.scenario.priority_layer_groups)}\n")
+        log("**********TEST**********\n")
+        log(json.dumps(input_dict, cls=UUIDEncoder))
+        scenario_start_time = time.time()
         self.scenario_directory = os.path.join(
             f"{base_dir}",
             f'scenario_{datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}',
@@ -226,7 +292,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         # The highest position tool analysis
         self.run_highest_position_analysis()
-
+        log(f"execution time: {time.time() - scenario_start_time} seconds")
         return True
 
     def finished(self, result: bool):

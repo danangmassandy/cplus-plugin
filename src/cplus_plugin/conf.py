@@ -44,6 +44,14 @@ from .models.helpers import (
 from .utils import log
 
 
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, uuid.UUID):
+            # if the obj is uuid, we simply return the value of uuid
+            return obj.hex
+        return json.JSONEncoder.default(self, obj)
+
+
 @contextlib.contextmanager
 def qgis_settings(group_root: str, settings=None):
     """Context manager to help defining groups when creating QgsSettings.
@@ -413,6 +421,9 @@ class SettingsManager(QtCore.QObject):
                 "user_defined", defaultValue=True, type=bool
             )
             priority_layer["groups"] = groups
+        if priority_layer:
+            log("*****get_priority_layer*****")
+            log(json.dumps(priority_layer, cls=UUIDEncoder))
         return priority_layer
 
     def get_priority_layers(self) -> typing.List:
@@ -452,6 +463,8 @@ class SettingsManager(QtCore.QObject):
                         "groups": groups,
                     }
                     priority_layer_list.append(layer)
+        log("*****get_priority_layers*****")
+        log(json.dumps(priority_layer_list, cls=UUIDEncoder))
         return priority_layer_list
 
     def find_layer_by_name(self, name) -> typing.Dict:
@@ -758,6 +771,8 @@ class SettingsManager(QtCore.QObject):
         with qgis_settings(ncs_root) as settings:
             ncs_model = settings.value(ncs_uuid, dict())
             if len(ncs_model) > 0:
+                log("*****get_ncs_pathway_dict*****")
+                log(ncs_model)
                 try:
                     ncs_pathway_dict = json.loads(ncs_model)
                 except json.JSONDecodeError:
@@ -921,6 +936,8 @@ class SettingsManager(QtCore.QObject):
             implementation_model = settings.value(implementation_model_uuid, None)
             ncs_uuids = []
             if implementation_model is not None:
+                log("*****get_implementation_model*****")
+                log(implementation_model)
                 implementation_model_dict = {}
                 try:
                     implementation_model_dict = json.loads(implementation_model)
@@ -929,7 +946,7 @@ class SettingsManager(QtCore.QObject):
 
                 if PATHWAYS_ATTRIBUTE in implementation_model_dict:
                     ncs_uuids = implementation_model_dict[PATHWAYS_ATTRIBUTE]
-
+                log(f"*****ncs_uuids***** {ncs_uuids}")
                 implementation_model = create_implementation_model(
                     implementation_model_dict
                 )
