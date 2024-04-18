@@ -44,6 +44,14 @@ from .models.helpers import (
 from .utils import log
 
 
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, uuid.UUID):
+            # if the obj is uuid, we simply return the value of uuid
+            return obj.hex
+        return json.JSONEncoder.default(self, obj)
+
+
 @contextlib.contextmanager
 def qgis_settings(group_root: str, settings=None):
     """Context manager to help defining groups when creating QgsSettings.
