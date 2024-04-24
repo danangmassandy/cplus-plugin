@@ -7,6 +7,8 @@
 import math
 import os
 import uuid
+import json
+import time
 
 import datetime
 
@@ -62,6 +64,14 @@ from .definitions.defaults import (
 )
 
 from qgis.core import QgsTask
+
+
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, uuid.UUID):
+            # if the obj is uuid, we simply return the value of uuid
+            return obj.hex
+        return json.JSONEncoder.default(self, obj)
 
 
 class ScenarioAnalysisTask(QgsTask):
@@ -140,7 +150,64 @@ class ScenarioAnalysisTask(QgsTask):
 
     def run(self):
         """Runs the main scenario analysis task operations"""
-
+        input_dict = {
+            "scenario_name": self.scenario.name,
+            "scenario_desc": self.scenario.description,
+            "extent": self.analysis_extent.bbox,
+            "snapping_enabled": self.get_settings_value(
+                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+            ),
+            "reference_layer": self.get_settings_value(Settings.SNAP_LAYER, default=""),
+            "sieve_enabled": self.get_settings_value(
+                Settings.SIEVE_ENABLED, default=False
+            ),
+            "sieve_threshold": float(
+                self.get_settings_value(Settings.SIEVE_THRESHOLD, default=10.0)
+            ),
+            "mask_layer": self.get_settings_value(Settings.SIEVE_MASK_PATH, default=""),
+            "suitability_index": float(
+                self.get_settings_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
+            ),
+            "carbon_coefficient": float(
+                self.get_settings_value(Settings.CARBON_COEFFICIENT, default=0.0)
+            ),
+            "rescale_values": self.get_settings_value(
+                Settings.RESCALE_VALUES, default=False, setting_type=bool
+            ),
+            "resampling_method": self.get_settings_value(
+                Settings.RESAMPLING_METHOD, default=0
+            ),
+            "priority_layers": self.get_priority_layers(),
+            "priority_layer_groups": self.analysis_priority_layers_groups,
+            "activities": [],
+        }
+        for model in self.analysis_activities:
+            activity_model_dict = {
+                "uuid": str(model.uuid),
+                "name": model.name,
+                "description": model.description,
+                "path": model.path,
+                "layer_type": model.layer_type,
+                "user_defined": model.user_defined,
+                "pathways": [],
+                "priority_layers": model.priority_layers,
+                "layer_styles": model.layer_styles,
+            }
+            for pathway in model.pathways:
+                activity_model_dict["pathways"].append(
+                    {
+                        "uuid": str(pathway.uuid),
+                        "name": pathway.name,
+                        "description": pathway.description,
+                        "path": pathway.path,
+                        "layer_type": pathway.layer_type,
+                        "carbon_paths": pathway.carbon_paths,
+                    }
+                )
+            input_dict["activities"].append(activity_model_dict)
+        self.log_message("**********SCENARIO DETAIL JSON**********\n")
+        self.log_message(json.dumps(input_dict, cls=UUIDEncoder))
+        scenario_start_time = time.time()
         self.scenario_directory = self.get_scenario_directory()
 
         FileUtils.create_new_dir(self.scenario_directory)
@@ -268,6 +335,8 @@ class ScenarioAnalysisTask(QgsTask):
 
         # The highest position tool analysis
         self.run_highest_position_analysis()
+
+        self.log_message(f"execution time: {time.time() - scenario_start_time} seconds")
 
         return True
 
