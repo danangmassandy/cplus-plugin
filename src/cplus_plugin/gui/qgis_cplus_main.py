@@ -79,6 +79,7 @@ from ..utils import (
     log,
     FileUtils,
 )
+from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
 
 from ..definitions.defaults import (
     ADD_LAYER_ICON_PATH,
@@ -975,7 +976,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 transformed_extent.yMaximum(),
             ]
 
-            analysis_task = ScenarioAnalysisTask(
+            # analysis_task = ScenarioAnalysisTask(
+            #     self.analysis_scenario_name,
+            #     self.analysis_scenario_description,
+            #     self.analysis_activities,
+            #     self.analysis_priority_layers_groups,
+            #     self.analysis_extent,
+            #     scenario,
+            # )
+            analysis_task = ScenarioAnalysisTaskApiClient(
                 self.analysis_scenario_name,
                 self.analysis_scenario_description,
                 self.analysis_activities,
@@ -1107,18 +1116,22 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param report_manager: Report manager used to generate analysis reports
         :type report_manager: ReportManager
         """
-        if task.output is not None:
-            self.update_progress_bar(progress_dialog, 100)
-            self.scenario_result.analysis_output = task.output
-            self.scenario_result.state = ScenarioState.FINISHED
-            self.post_analysis(
-                self.scenario_result, task, report_manager, progress_dialog
-            )
-        else:
-            status_message = "No valid output from the processing results."
-            task.set_status_message(status_message)
+        # TODO: the post_analysis until fetch output from API is implemented
+        self.update_progress_bar(progress_dialog, 100)
+        self.scenario_result.analysis_output = task.output
+        self.scenario_result.state = ScenarioState.FINISHED
+        # if task.output is not None:
+        #     self.update_progress_bar(progress_dialog, 100)
+        #     self.scenario_result.analysis_output = task.output
+        #     self.scenario_result.state = ScenarioState.FINISHED
+        #     self.post_analysis(
+        #         self.scenario_result, task, report_manager, progress_dialog
+        #     )
+        # else:
+        #     status_message = "No valid output from the processing results."
+        #     task.set_status_message(status_message)
 
-            log(f"No valid output from the processing results.")
+        #     log(f"No valid output from the processing results.")
 
     def move_layer_to_group(self, layer, group) -> None:
         """Moves a layer open in QGIS to another group.
