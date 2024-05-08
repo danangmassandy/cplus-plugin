@@ -892,7 +892,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     f"Plugin base data directory is not set! "
                     f"Go to plugin settings in order to set it."
                 ),
-                level=Qgis.Critial,
+                level=Qgis.Critical,
             )
             return
         self.analysis_extent = SpatialExtent(
@@ -1120,18 +1120,18 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.update_progress_bar(progress_dialog, 100)
         self.scenario_result.analysis_output = task.output
         self.scenario_result.state = ScenarioState.FINISHED
-        # if task.output is not None:
-        #     self.update_progress_bar(progress_dialog, 100)
-        #     self.scenario_result.analysis_output = task.output
-        #     self.scenario_result.state = ScenarioState.FINISHED
-        #     self.post_analysis(
-        #         self.scenario_result, task, report_manager, progress_dialog
-        #     )
-        # else:
-        #     status_message = "No valid output from the processing results."
-        #     task.set_status_message(status_message)
+        if task.output is not None:
+            self.update_progress_bar(progress_dialog, 100)
+            self.scenario_result.analysis_output = task.output
+            self.scenario_result.state = ScenarioState.FINISHED
+            self.post_analysis(
+                self.scenario_result, task, report_manager, progress_dialog
+            )
+        else:
+            status_message = "No valid output from the processing results."
+            task.set_status_message(status_message)
 
-        #     log(f"No valid output from the processing results.")
+            log(f"No valid output from the processing results.")
 
     def move_layer_to_group(self, layer, group) -> None:
         """Moves a layer open in QGIS to another group.

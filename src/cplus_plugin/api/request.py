@@ -102,7 +102,7 @@ class CplusApiUrl:
     def __init__(self):
         self._api_token = None
         # TODO: retrieve base_url from QgisSettings
-        self.base_url = "http://localhost:8000/api/v1"
+        self.base_url = "http://0.0.0.0:9999/api/v1"
         self.trends_urls = TrendsApiUrl()
 
     @property
@@ -112,8 +112,8 @@ class CplusApiUrl:
             return self._api_token
         # fetch token from Trends Earth API
         # TODO: retrieve username+pw from secured QgisSettings
-        username = ""
-        pw = ""
+        username = "zakki@kartoza.com"
+        pw = "94WF2R"
         response = requests.post(
             self.trends_urls.auth, json={"email": username, "password": pw}
         )
@@ -151,6 +151,12 @@ class CplusApiUrl:
 
     def scenario_cancel(self, scenario_uuid):
         return f"{self.base_url}/scenario/{scenario_uuid}/cancel/"
+
+    def scenario_detail(self, scenario_uuid):
+        return f"{self.base_url}/scenario/{scenario_uuid}/detail/"
+
+    def scenario_output_list(self, scenario_uuid):
+        return f"{self.base_url}/scenario_output/{scenario_uuid}/list/?download_all=true&page=1&page_size=100"
 
 
 class CplusApiRequest:
@@ -194,3 +200,17 @@ class CplusApiRequest:
         if response.status_code != 200:
             raise CplusApiRequestError(result.get("detail", ""))
         return True
+
+    def fetch_scenario_output_list(self, scenario_uuid):
+        response = self.get(self.urls.scenario_output_list(scenario_uuid))
+        result = response.json()
+        if response.status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        return result
+
+    def fetch_scenario_detail(self, scenario_uuid):
+        response = self.get(self.urls.scenario_detail(scenario_uuid))
+        result = response.json()
+        if response.status_code != 200:
+            raise CplusApiRequestError(result.get("detail", ""))
+        return result
