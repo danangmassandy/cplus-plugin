@@ -1,3 +1,4 @@
+import os
 import time
 import requests
 import json
@@ -112,8 +113,8 @@ class CplusApiUrl:
             return self._api_token
         # fetch token from Trends Earth API
         # TODO: retrieve username+pw from secured QgisSettings
-        username = "zakki@kartoza.com"
-        pw = "94WF2R"
+        username = os.getenv("CPLUS_USERNAME", "")
+        pw = os.getenv("CPLUS_PASSWORD", "")
         response = requests.post(
             self.trends_urls.auth, json={"email": username, "password": pw}
         )

@@ -359,31 +359,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         for activity in self.new_scenario_detail['updated_detail']['weighted_activities']:
             weighted_activities.append(self.create_activity(activity, download_dict))
 
-
-            # file_name = clean_filename(activity['name'].replace(" ", "_"))
-            # for output_fname in output_fnames:
-            #     if output_fname.startswith(file_name):
-            #         normalized_activity = deepcopy(activity)
-            #         weighted_activity = deepcopy(activity)
-            #         ncs_pathways = []
-            #         for dpath in download_paths:
-            #             if f'normalized_activities/{file_name}' in dpath:
-            #                 normalized_activity['path'] = dpath
-            #             elif f'weighted_activities/{file_name}' in dpath and 'cleaned' in dpath:
-            #                 weighted_activity['path'] = dpath
-            #             elif f'normalized_pathways/{file_name}' in dpath:
-            #                 for pathway in activity['pathways']:
-            #                     if 'layer_uuid' in pathway:
-            #                         del pathway['layer_uuid']
-            #                     if 'carbon_uuids' in pathway:
-            #                         del pathway['carbon_uuids']
-            #                     pathway['path'] = dpath
-            #                     ncs_pathways.append(NcsPathway(**pathway))
-            #                 normalized_activity['pathways'] = ncs_pathways
-            #                 weighted_activity['pathways'] = ncs_pathways
-            #         weighted_activities.append(Activity(**weighted_activity))
-            #         activities.append(Activity(**normalized_activity))
-
         self.analysis_weighted_activities = weighted_activities
         self.analysis_activities = activities
         self.scenario.activities = activities
@@ -391,9 +366,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.scenario.priority_layer_groups = self.new_scenario_detail['updated_detail']['priority_layer_groups']
 
     def __retrieve_scenario_outputs(self, scenario_uuid):
-        # TODO: retrieve scenario outputs
-        # TODO: ensure the scenario and output attribute will be the same with ScenarioAnalysisTask
-
         output_list = self.request.fetch_scenario_output_list(scenario_uuid)
         urls_to_download = []
         download_paths = []
@@ -417,16 +389,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 )
             download_paths.append(download_path)
 
-        # with concurrent.futures.ThreadPoolExecutor(
-        #         max_workers=3 if os.cpu_count() > 3 else 1
-        # ) as executor:
-        #     executor.map(
-        #         download_file,
-        #         urls_to_download,
-        #         download_paths
-        #     )
-        for idx, download_path in enumerate(download_paths):
-            download_file(urls_to_download[idx], download_path)
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=3 if os.cpu_count() > 3 else 1
+        ) as executor:
+            executor.map(
+                download_file,
+                urls_to_download,
+                download_paths
+            )
+        # for idx, download_path in enumerate(download_paths):
+        #     download_file(urls_to_download[idx], download_path)
 
         self.set_scenario(output_list, download_paths)
 
@@ -438,12 +410,4 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             analysis_output=self.output,
         )
 
-        # self.analysis_weighted_activities = [
-        #     Activity(
-        #         uuid='d0fa1fa6-7c27-49af-83fa-6b153d1eda0c',
-        #         name='Final_Alien_Invasive_Plant_priority_norm.tif',
-        #         description='Description',
-        #         path=download_paths[-1]
-        #     )
-        # ]
         self.analysis_priority_layers_groups
