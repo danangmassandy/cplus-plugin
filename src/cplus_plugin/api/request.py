@@ -12,7 +12,7 @@ JOB_STOPPED_STATUS = "Stopped"
 
 
 def log_response(response, request_name):
-    log(f"****Response - {request_name}*****")
+    log(f"****Response - {request_name} *****")
     if isinstance(response, dict):
         log(json.dumps(response))
     else:
@@ -115,6 +115,10 @@ class CplusApiUrl:
         # TODO: retrieve username+pw from secured QgisSettings
         username = os.getenv("CPLUS_USERNAME", "")
         pw = os.getenv("CPLUS_PASSWORD", "")
+
+        username = "zakki@kartoza.com"
+        pw = "94WF2R"
+
         response = requests.post(
             self.trends_urls.auth, json={"email": username, "password": pw}
         )
@@ -137,6 +141,9 @@ class CplusApiUrl:
         return {
             "Authorization": f"Bearer {self.api_token}",
         }
+
+    def layer_detail(self, scenario_uuid):
+        return f"{self.base_url}/layer/{scenario_uuid}/"
 
     def scenario_submit(self, plugin_version=None):
         url = f"{self.base_url}/scenario/submit/"
@@ -176,6 +183,14 @@ class CplusApiRequest:
     def post(self, url, data: json):
         """GET requests."""
         return requests.post(url, json=data, headers=self.urls.headers)
+
+
+    def check_layer(self, layer_uuid):
+        response = self.get(self.urls.layer_detail(layer_uuid))
+        result = response.json()
+        if response.status_code != 201:
+            raise CplusApiRequestError(result.get("detail", ""))
+        return response
 
     def submit_scenario_detail(self, scenario_detail):
         response = self.post(self.urls.scenario_submit(), scenario_detail)

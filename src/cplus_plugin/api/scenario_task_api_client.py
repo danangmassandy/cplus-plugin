@@ -2,15 +2,19 @@ import json
 import os
 import traceback
 import concurrent.futures
+from pathlib import Path
 from functools import partial
 from copy import deepcopy
+import pathlib
 
 from qgis.core import Qgis
 
+from ..conf import settings_manager, Settings
 from ..models.base import ScenarioResult
 from ..utils import FileUtils, CustomJsonEncoder
 from ..tasks import ScenarioAnalysisTask
 from .request import CplusApiRequest, JOB_COMPLETED_STATUS, JOB_STOPPED_STATUS
+from .multipart_upload import run_parallel_upload, run_upload
 import requests
 import re
 from urllib.parse import urlparse, parse_qs
@@ -281,7 +285,20 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         """Run scenario analysis using API."""
         self.request = CplusApiRequest()
         self.scenario_directory = self.get_scenario_directory()
+        self.log_message(os.path.dirname(os.path.abspath(__file__)))
+        self.file_mapping_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'uploaded_layer.json'
+        )
+        # self.file_mapping_path = '/home/zamuzakki/PycharmProjects/Kartoza/CI-CPLUS/cplus-plugin/src/cplus_plugin/api/uploaded_layer.json'
+        self.log_message(self.file_mapping_path)
         FileUtils.create_new_dir(self.scenario_directory)
+
+        try:
+            self.upload_layers()
+        except Exception as e:
+            self.log_message(str(e))
+
         try:
             self.__execute_scenario_analysis()
         except Exception as ex:
@@ -293,6 +310,78 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.cancel_task()
             return False
         return True
+
+    def upload_layers(self):
+        files_to_upload = {}
+
+        for activity in self.analysis_activities:
+            for pathway in activity.pathways:
+                if pathway:
+                    if pathway.path and os.path.exists(pathway.path):
+                        is_uploaded = self.__is_layer_uploaded(pathway.path)
+                        if not is_uploaded:
+                            files_to_upload[pathway.path] = 'ncs_pathway'
+
+                    for carbon_path in pathway.carbon_paths:
+                        if os.path.exists(carbon_path):
+                            is_uploaded = self.__is_layer_uploaded(carbon_path)
+                            if not is_uploaded:
+                                files_to_upload[carbon_path] = 'ncs_carbon'
+
+            for priority_layer in activity.priority_layers:
+                if priority_layer:
+                    if priority_layer['path'] and os.path.exists(priority_layer['path']):
+                        is_uploaded = self.__is_layer_uploaded(priority_layer['path'])
+                        if not is_uploaded:
+                            files_to_upload[priority_layer['path']] = 'priority_layer'
+
+        reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
+
+        if reference_layer:
+            is_uploaded = self.__is_layer_uploaded(reference_layer)
+            if not is_uploaded:
+                files_to_upload[reference_layer] = 'reference_layer'
+
+        mask_layer = self.get_settings_value(
+            Settings.SIEVE_MASK_PATH, default=""
+        )
+
+        if mask_layer:
+            is_uploaded = self.__is_layer_uploaded(mask_layer)
+            if not is_uploaded:
+                files_to_upload[mask_layer] = 'mask_layer'
+        self.log_message('-------------------------')
+        self.log_message(json.dumps(files_to_upload))
+        self.log_message('-------------------------')
+
+        # for filepath, component_type in files_to_upload.items():
+            # run_upload(filepath, component_type)
+        final_results = run_parallel_upload(files_to_upload)
+
+        new_uploaded_layer = {}
+        for file_path in files_to_upload:
+            filename_without_ext = '.'.join(os.path.basename(file_path).split('.')[0:-1])
+            for res in final_results:
+                if res['name'].startswith(filename_without_ext):
+                    new_uploaded_layer[file_path] = res
+                    break
+        fr = open(self.file_mapping_path, 'r')
+        uploaded_layer_dict = json.loads(fr.read())
+        fr.close()
+        with open(self.file_mapping_path, 'w') as fw:
+            uploaded_layer_dict.update(new_uploaded_layer)
+            fw.write(json.dumps(uploaded_layer_dict, sort_keys=True, indent=4))
+            self.log_message(json.dumps(uploaded_layer_dict))
+
+    def __is_layer_uploaded(self, layer_path: str):
+        # TODO: Check uploaded layer value from QGIS settings
+        self.log_message('__is_layer_uploaded')
+        with open(self.file_mapping_path, 'r') as f:
+            uploaded_layer_dict = json.loads(f.read())
+            if layer_path in uploaded_layer_dict:
+                is_uploaded = self.request.check_layer(uploaded_layer_dict[layer_path]['uuid'])
+                return is_uploaded
+            return False
 
     def __execute_scenario_analysis(self):
         # TODO: validate all layers exists in server
