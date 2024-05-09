@@ -1,25 +1,19 @@
+import concurrent.futures
 import json
 import os
 import traceback
-import concurrent.futures
-from pathlib import Path
-from functools import partial
-from copy import deepcopy
-import pathlib
+from urllib.parse import urlparse, parse_qs
 
+import requests
 from qgis.core import Qgis
 
-from ..conf import settings_manager, Settings
-from ..models.base import ScenarioResult
-from ..utils import FileUtils, CustomJsonEncoder
-from ..tasks import ScenarioAnalysisTask
-from .request import CplusApiRequest, JOB_COMPLETED_STATUS, JOB_STOPPED_STATUS
-from .multipart_upload import run_parallel_upload, run_upload
-import requests
-import re
-from urllib.parse import urlparse, parse_qs
+from .multipart_upload import upload_part
+from .request import CplusApiRequest, JOB_COMPLETED_STATUS, JOB_STOPPED_STATUS, CHUNK_SIZE
+from ..conf import Settings
 from ..models.base import Activity, NcsPathway
-
+from ..models.base import ScenarioResult
+from ..tasks import ScenarioAnalysisTask
+from ..utils import FileUtils, CustomJsonEncoder
 
 SCENARIO_DETAIL = {
     "scenario_name": "Scenario with Activity 1",
@@ -290,8 +284,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             os.path.dirname(os.path.abspath(__file__)),
             'uploaded_layer.json'
         )
-        # self.file_mapping_path = '/home/zamuzakki/PycharmProjects/Kartoza/CI-CPLUS/cplus-plugin/src/cplus_plugin/api/uploaded_layer.json'
-        self.log_message(self.file_mapping_path)
+        self.file_mapping_path = '/home/zamuzakki/PycharmProjects/Kartoza/CI-CPLUS/cplus-plugin/src/cplus_plugin/api/uploaded_layer.json'
         FileUtils.create_new_dir(self.scenario_directory)
 
         try:
@@ -310,6 +303,48 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             self.cancel_task()
             return False
         return True
+
+    def run_upload(self, file_path, component_type):
+        # start upload
+        upload_params = self.request.start_upload_layer(file_path, component_type)
+        upload_id = upload_params['multipart_upload_id']
+        layer_uuid = upload_params['uuid']
+        upload_urls = upload_params['upload_urls']
+        # do upload by chunks
+        items = []
+        idx = 0
+        with open(file_path, 'rb') as f:
+            while True:
+                chunk = f.read(CHUNK_SIZE)
+                if not chunk:
+                    break
+                url_item = upload_urls[idx]
+                self.log_message(f"starting upload part {url_item['part_number']}")
+                part_item = upload_part(
+                    url_item['url'], chunk, url_item['part_number'])
+                items.append(part_item)
+                self.log_message(f"finished upload part {url_item['part_number']}")
+                idx += 1
+        self.log_message(f'***Total upload_urls: {len(upload_urls)}')
+        self.log_message(f'***Total chunks: {idx}')
+        # finish upload
+        result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
+        return result
+
+    def run_parallel_upload(self, upload_dict):
+        file_paths = list(upload_dict.keys())
+        component_types = list(upload_dict.values())
+
+        final_result = []
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=3 if os.cpu_count() > 3 else 1
+        ) as executor:
+            final_result.extend(list(executor.map(
+                self.run_upload,
+                file_paths,
+                component_types
+            )))
+        return list(final_result)
 
     def upload_layers(self):
         files_to_upload = {}
@@ -350,13 +385,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             is_uploaded = self.__is_layer_uploaded(mask_layer)
             if not is_uploaded:
                 files_to_upload[mask_layer] = 'mask_layer'
-        self.log_message('-------------------------')
-        self.log_message(json.dumps(files_to_upload))
-        self.log_message('-------------------------')
 
         # for filepath, component_type in files_to_upload.items():
             # run_upload(filepath, component_type)
-        final_results = run_parallel_upload(files_to_upload)
+        final_results = self.run_parallel_upload(files_to_upload)
+        self.log_message(json.dumps(final_results))
 
         new_uploaded_layer = {}
         for file_path in files_to_upload:
@@ -371,11 +404,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         with open(self.file_mapping_path, 'w') as fw:
             uploaded_layer_dict.update(new_uploaded_layer)
             fw.write(json.dumps(uploaded_layer_dict, sort_keys=True, indent=4))
-            self.log_message(json.dumps(uploaded_layer_dict))
 
     def __is_layer_uploaded(self, layer_path: str):
         # TODO: Check uploaded layer value from QGIS settings
-        self.log_message('__is_layer_uploaded')
         with open(self.file_mapping_path, 'r') as f:
             uploaded_layer_dict = json.loads(f.read())
             if layer_path in uploaded_layer_dict:
@@ -411,7 +442,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
     def __update_scenario_status(self, response):
         self.set_status_message(response.get("progress_text", ""))
         self.update_progress(response.get("progress", 0))
-
 
     def create_activity(self, activity: dict, download_dict: list):
         ncs_pathways = []
@@ -491,8 +521,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
         self.set_scenario(output_list, download_paths)
 
-        self.log_message('SCEN DIR')
-        self.log_message(self.scenario_directory)
         self.scenario_result = ScenarioResult(
             scenario=self.scenario,
             scenario_directory=self.scenario_directory,

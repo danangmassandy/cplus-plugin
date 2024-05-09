@@ -1,14 +1,23 @@
-import os
 import time
-import requests
+import os
+import math
 import json
+import requests
 
 from ..utils import log
+import json
+import math
+import os
+import time
 
+import requests
+
+from ..utils import log
 
 JOB_COMPLETED_STATUS = "Completed"
 JOB_CANCELLED_STATUS = "Cancelled"
 JOB_STOPPED_STATUS = "Stopped"
+CHUNK_SIZE = 100 * 1024 * 1024
 
 
 def log_response(response, request_name):
@@ -116,9 +125,6 @@ class CplusApiUrl:
         username = os.getenv("CPLUS_USERNAME", "")
         pw = os.getenv("CPLUS_PASSWORD", "")
 
-        username = "zakki@kartoza.com"
-        pw = "94WF2R"
-
         response = requests.post(
             self.trends_urls.auth, json={"email": username, "password": pw}
         )
@@ -142,8 +148,14 @@ class CplusApiUrl:
             "Authorization": f"Bearer {self.api_token}",
         }
 
-    def layer_detail(self, scenario_uuid):
-        return f"{self.base_url}/layer/{scenario_uuid}/"
+    def layer_detail(self, layer_uuid):
+        return f"{self.base_url}/layer/{layer_uuid}/"
+
+    def layer_upload_start(self):
+        return f"{self.base_url}/layer/upload/start/"
+
+    def layer_upload_finish(self, layer_uuid):
+        return f"{self.base_url}/layer/upload/{layer_uuid}/finish/"
 
     def scenario_submit(self, plugin_version=None):
         url = f"{self.base_url}/scenario/submit/"
@@ -191,6 +203,31 @@ class CplusApiRequest:
         if response.status_code != 201:
             raise CplusApiRequestError(result.get("detail", ""))
         return response
+
+    def start_upload_layer(self, file_path, component_type):
+        file_size = os.stat(file_path).st_size
+        payload = {
+            "layer_type": 0,
+            "component_type": component_type,
+            "privacy_type": "private",
+            "name": os.path.basename(file_path),
+            "size": file_size,
+            "number_of_parts": math.ceil(file_size / CHUNK_SIZE)
+        }
+        response = self.post(self.urls.layer_upload_start(), payload)
+        result = response.json()
+        if response.status_code != 201:
+            raise CplusApiRequestError(result.get("detail", ""))
+        return result
+
+    def finish_upload_layer(self, layer_uuid,  upload_id, items):
+        payload = {
+            "multipart_upload_id": upload_id,
+            "items": items
+        }
+        response = self.post(self.urls.layer_upload_finish(layer_uuid), payload)
+        result = response.json()
+        return result
 
     def submit_scenario_detail(self, scenario_detail):
         response = self.post(self.urls.scenario_submit(), scenario_detail)
