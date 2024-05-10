@@ -125,6 +125,9 @@ class CplusApiUrl:
         username = os.getenv("CPLUS_USERNAME", "")
         pw = os.getenv("CPLUS_PASSWORD", "")
 
+        username = 'zakki@kartoza.com'
+        pw = '94WF2R'
+
         response = requests.post(
             self.trends_urls.auth, json={"email": username, "password": pw}
         )
@@ -197,12 +200,10 @@ class CplusApiRequest:
         return requests.post(url, json=data, headers=self.urls.headers)
 
 
-    def check_layer(self, layer_uuid):
+    def get_layer_detail(self, layer_uuid):
         response = self.get(self.urls.layer_detail(layer_uuid))
         result = response.json()
-        if response.status_code != 201:
-            raise CplusApiRequestError(result.get("detail", ""))
-        return response
+        return result
 
     def start_upload_layer(self, file_path, component_type):
         file_size = os.stat(file_path).st_size
@@ -225,6 +226,7 @@ class CplusApiRequest:
             "multipart_upload_id": upload_id,
             "items": items
         }
+        log(json.dumps(payload))
         response = self.post(self.urls.layer_upload_finish(layer_uuid), payload)
         result = response.json()
         return result
@@ -234,7 +236,7 @@ class CplusApiRequest:
         result = response.json()
         if response.status_code != 201:
             raise CplusApiRequestError(result.get("detail", ""))
-        return response["uuid"]
+        return result["uuid"]
 
     def execute_scenario(self, scenario_uuid):
         response = self.get(self.urls.scenario_execute(scenario_uuid))

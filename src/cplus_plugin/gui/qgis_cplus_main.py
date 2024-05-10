@@ -3,7 +3,7 @@
 """
  The plugin main window class.
 """
-
+import json
 import os
 import typing
 import uuid
@@ -80,6 +80,8 @@ from ..utils import (
     log,
     FileUtils,
     write_to_file,
+    todict,
+    CustomJsonEncoder
 )
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
 
@@ -1079,7 +1081,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 transformed_extent.yMinimum(),
                 transformed_extent.yMaximum(),
             ]
-
             # analysis_task = ScenarioAnalysisTask(
             #     self.analysis_scenario_name,
             #     self.analysis_scenario_description,

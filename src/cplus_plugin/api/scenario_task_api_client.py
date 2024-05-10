@@ -13,230 +13,8 @@ from ..conf import Settings
 from ..models.base import Activity, NcsPathway
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
-from ..utils import FileUtils, CustomJsonEncoder
+from ..utils import FileUtils, CustomJsonEncoder, todict
 
-SCENARIO_DETAIL = {
-    "scenario_name": "Scenario with Activity 1",
-    "scenario_desc": "Test",
-    "extent": [
-        878529.3786140494,
-        911063.0818645271,
-        7216308.751738624,
-        7279753.465204147
-    ],
-    "snapping_enabled": False,
-    "reference_layer": "a45473bb-c56e-43bc-bbc5-2c7a34ebe89a",
-    "sieve_enabled": False,
-    "sieve_threshold": 10,
-    "mask_layer": "",
-    "suitability_index": 0,
-    "carbon_coefficient": 0,
-    "rescale_values": False,
-    "resampling_method": "0",
-    "priority_layers": [
-        {
-            "uuid": "3e0c7dff-51f2-48c5-a316-15d9ca2407cb",
-            "name": "Ecological Infrastructure inverse",
-            "description": "Placeholder text for ecological infrastructure inverse",
-            "path": "ei_all_gknp_clip_norm.tif",
-            "selected": False,
-            "user_defined": False,
-            "groups": []
-        },
-        {
-            "uuid": "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
-            "name": "Ecological Infrastructure",
-            "description": "Placeholder text for ecological infrastructure",
-            "path": "ei_all_gknp_clip_norm.tif",
-            "selected": False,
-            "user_defined": False,
-            "groups": []
-        },
-        {
-            "uuid": "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
-            "name": "Biodiversity norm",
-            "description": "Placeholder text for biodiversity norm",
-            "path": "biocombine_clip_norm.tif",
-            "selected": False,
-            "user_defined": False,
-            "groups": [
-                {
-                    "uuid": "21a30a80-eb49-4c5e-aff6-558123688e09",
-                    "name": "Climate Resilience",
-                    "value": "5"
-                }
-            ]
-        },
-        {
-            "uuid": "c2dddd0f-a430-444a-811c-72b987b5e8ce",
-            "name": "Biodiversity norm inverse",
-            "description": "Placeholder text for biodiversity norm inverse",
-            "path": "biocombine_clip_norm_inverse.tif",
-            "selected": False,
-            "user_defined": False,
-            "groups": []
-        },
-        {
-            "uuid": "c931282f-db2d-4644-9786-6720b3ab206a",
-            "name": "Social norm",
-            "description": "Placeholder text for social norm ",
-            "path": "social_int_clip_norm.tif",
-            "selected": True,
-            "user_defined": False,
-            "groups": []
-        },
-        {
-            "uuid": "f5687ced-af18-4cfc-9bc3-8006e40420b6",
-            "name": "Social norm inverse",
-            "description": "Placeholder text for social norm inverse",
-            "path": "social_int_clip_norm_inverse.tif",
-            "selected": False,
-            "user_defined": False,
-            "groups": []
-        },
-        {
-            "uuid": "fce41934-5196-45d5-80bd-96423ff0e74e",
-            "name": "Climate Resilience norm",
-            "description": "Placeholder text for climate resilience norm",
-            "path": "cccombo_clip_norm.tif",
-            "selected": False,
-            "user_defined": False,
-            "groups": []
-        },
-        {
-            "uuid": "fef3c7e4-0cdf-477f-823b-a99da42f931e",
-            "name": "Climate Resilience norm inverse",
-            "description": "Placeholder text for climate resilience",
-            "path": "cccombo_clip_norm_inverse.tif",
-            "selected": False,
-            "user_defined": False,
-            "groups": []
-        }
-    ],
-    "priority_layer_groups": [
-        {
-            "name": "Climate Resilience",
-            "value": "0",
-            "layers": [
-                "Biodiversity norm"
-            ]
-        },
-        {
-            "name": "Finance - Net Present value",
-            "value": "0",
-            "layers": []
-        },
-        {
-            "name": "Finance - Years Experience",
-            "value": "0",
-            "layers": []
-        },
-        {
-            "name": "Finance - Carbon",
-            "value": "0",
-            "layers": []
-        },
-        {
-            "name": "Livelihood",
-            "value": "0",
-            "layers": []
-        },
-        {
-            "name": "Policy",
-            "value": "0",
-            "layers": []
-        },
-        {
-            "name": "Ecological infrastructure",
-            "value": "0",
-            "layers": []
-        },
-        {
-            "name": "Finance - Market Trends",
-            "value": "0",
-            "layers": []
-        },
-        {
-            "name": "Biodiversity",
-            "value": "0",
-            "layers": []
-        }
-    ],
-    "activities": [
-        {
-            "uuid": "d0fa1fa6-7c27-49af-83fa-6b153d1eda0c",
-            "name": "Alien Plant Removal",
-            "description": "Description",
-            "path": "",
-            "layer_type": -1,
-            "user_defined": False,
-            "pathways": [
-                {
-                    "uuid": "d0fa1fa6-7c27-49af-83fa-6b153d1eda0c",
-                    "name": "Alien Plant Removal",
-                    "description": "Alien Plant Class.",
-                    "path": "",
-                    "layer_type": 0,
-                    "layer_uuid": "d0fa1fa6-7c27-49af-83fa-6b153d1eda0c",
-                    "carbon_paths": [],
-                    "carbon_uuids": []
-                }
-            ],
-            "priority_layers": [
-                {
-                    "uuid": "c931282f-db2d-4644-9786-6720b3ab206a",
-                    "name": "Social norm",
-                    "description": "Placeholder text for social norm ",
-                    "path": "",
-                    "selected": True,
-                    "user_defined": False,
-                    "groups": []
-                },
-                {
-                    "uuid": "88c1c7dd-c5d1-420c-a71c-a5c595c1c5be",
-                    "name": "Ecological Infrastructure",
-                    "description": "Placeholder text for ecological infrastructure",
-                    "path": "",
-                    "selected": False,
-                    "user_defined": False,
-                    "groups": []
-                },
-                {
-                    "uuid": "9ab8c67a-5642-4a09-a777-bd94acfae9d1",
-                    "name": "Biodiversity norm",
-                    "description": "Placeholder text for biodiversity norm",
-                    "path": "",
-                    "selected": False,
-                    "user_defined": False,
-                    "groups": [
-                        {
-                            "uuid": "21a30a80-eb49-4c5e-aff6-558123688e09",
-                            "name": "Climate Resilience",
-                            "value": "5"
-                        }
-                    ]
-                }
-            ],
-            "layer_styles": {
-                "scenario_layer": {
-                    "color": "#6f6f6f",
-                    "style": "solid",
-                    "outline_width": "0",
-                    "outline_color": "35,35,35,0"
-                },
-                "activity_layer": {
-                    "color_ramp": {
-                        "colors": "8",
-                        "inverted": "0",
-                        "rampType": "colorbrewer",
-                        "schemeName": "Greys"
-                    },
-                    "ramp_type": "colorbrewer"
-                }
-            }
-        }
-    ]
-}
 
 def separate_url_and_params(url):
     parsed_url = urlparse(url)
@@ -279,18 +57,19 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         """Run scenario analysis using API."""
         self.request = CplusApiRequest()
         self.scenario_directory = self.get_scenario_directory()
-        self.log_message(os.path.dirname(os.path.abspath(__file__)))
         self.file_mapping_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             'uploaded_layer.json'
         )
         self.file_mapping_path = '/home/zamuzakki/PycharmProjects/Kartoza/CI-CPLUS/cplus-plugin/src/cplus_plugin/api/uploaded_layer.json'
         FileUtils.create_new_dir(self.scenario_directory)
-
         try:
             self.upload_layers()
         except Exception as e:
             self.log_message(str(e))
+
+        self.build_scenario_detail_json()
+        self.log_message(json.dumps(self.scenario_detail))
 
         try:
             self.__execute_scenario_analysis()
@@ -306,6 +85,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
 
     def run_upload(self, file_path, component_type):
         # start upload
+        self.log_message(f"Uploading {file_path} as {component_type}")
         upload_params = self.request.start_upload_layer(file_path, component_type)
         upload_id = upload_params['multipart_upload_id']
         layer_uuid = upload_params['uuid']
@@ -328,7 +108,18 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.log_message(f'***Total upload_urls: {len(upload_urls)}')
         self.log_message(f'***Total chunks: {idx}')
         # finish upload
-        result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
+        self.log_message(f"{layer_uuid} {upload_id} {items}")
+        self.log_message(json.dumps(upload_params))
+
+        if upload_id:
+            result = self.request.finish_upload_layer(layer_uuid, upload_id, items)
+        else:
+            layer_detail = self.request.get_layer_detail(layer_uuid)
+            result = {
+                "name": layer_detail['filename'],
+                "size": layer_detail['size'],
+                "uuid": layer_detail['uuid']
+            }
         return result
 
     def run_parallel_upload(self, upload_dict):
@@ -336,6 +127,9 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         component_types = list(upload_dict.values())
 
         final_result = []
+        # for idx, fp in enumerate(file_paths):
+        #     result = self.run_upload(fp, component_types[idx])
+        #     final_result.append(result)
         with concurrent.futures.ThreadPoolExecutor(
                 max_workers=3 if os.cpu_count() > 3 else 1
         ) as executor:
@@ -346,6 +140,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             )))
         return list(final_result)
 
+    def get_layer_mapping(self):
+        fr = open(self.file_mapping_path, 'r')
+        uploaded_layer_dict = json.loads(fr.read())
+        fr.close()
+        return uploaded_layer_dict
+
     def upload_layers(self):
         files_to_upload = {}
 
@@ -354,6 +154,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if pathway:
                     if pathway.path and os.path.exists(pathway.path):
                         is_uploaded = self.__is_layer_uploaded(pathway.path)
+                        self.log_message(str(is_uploaded))
                         if not is_uploaded:
                             files_to_upload[pathway.path] = 'ncs_pathway'
 
@@ -370,24 +171,42 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                         if not is_uploaded:
                             files_to_upload[priority_layer['path']] = 'priority_layer'
 
-        reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
-
-        if reference_layer:
-            is_uploaded = self.__is_layer_uploaded(reference_layer)
-            if not is_uploaded:
-                files_to_upload[reference_layer] = 'reference_layer'
-
-        mask_layer = self.get_settings_value(
-            Settings.SIEVE_MASK_PATH, default=""
+        sieve_enabled = self.get_settings_value(
+            Settings.SIEVE_ENABLED, default=False, setting_type=bool
         )
+        self.log_message(str(f"sieve_enabled: {sieve_enabled}"))
 
-        if mask_layer:
-            is_uploaded = self.__is_layer_uploaded(mask_layer)
+        if sieve_enabled:
+            sieve_mask_layer = self.get_settings_value(
+                Settings.SIEVE_MASK_PATH, default=""
+            )
+            self.log_message(str(f"sieve_mask_layer: {sieve_mask_layer}"))
+
+            if sieve_mask_layer:
+                is_uploaded = self.__is_layer_uploaded(sieve_mask_layer)
+                if not is_uploaded:
+                    files_to_upload[sieve_mask_layer] = 'sieve_mask_layer'
+
+            snapping_enabled = self.get_settings_value(
+                Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+            )
+            if snapping_enabled:
+                reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
+                self.log_message(str(f"reference_layer: {reference_layer}"))
+                if reference_layer:
+                    is_uploaded = self.__is_layer_uploaded(reference_layer)
+                    if not is_uploaded:
+                        files_to_upload[reference_layer] = 'snap_layer'
+
+        masking_layers = self.get_masking_layers()
+        for masking_layer in masking_layers:
+            is_uploaded = self.__is_layer_uploaded(masking_layer)
             if not is_uploaded:
-                files_to_upload[mask_layer] = 'mask_layer'
+                files_to_upload[masking_layer] = 'mask_layer'
 
         # for filepath, component_type in files_to_upload.items():
             # run_upload(filepath, component_type)
+        self.log_message(json.dumps(files_to_upload))
         final_results = self.run_parallel_upload(files_to_upload)
         self.log_message(json.dumps(final_results))
 
@@ -398,41 +217,122 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 if res['name'].startswith(filename_without_ext):
                     new_uploaded_layer[file_path] = res
                     break
-        fr = open(self.file_mapping_path, 'r')
-        uploaded_layer_dict = json.loads(fr.read())
-        fr.close()
+
+        uploaded_layer_dict = self.get_layer_mapping()
         with open(self.file_mapping_path, 'w') as fw:
             uploaded_layer_dict.update(new_uploaded_layer)
             fw.write(json.dumps(uploaded_layer_dict, sort_keys=True, indent=4))
 
     def __is_layer_uploaded(self, layer_path: str):
         # TODO: Check uploaded layer value from QGIS settings
-        with open(self.file_mapping_path, 'r') as f:
-            uploaded_layer_dict = json.loads(f.read())
-            if layer_path in uploaded_layer_dict:
-                is_uploaded = self.request.check_layer(uploaded_layer_dict[layer_path]['uuid'])
-                return is_uploaded
-            return False
+        uploaded_layer_dict = self.get_layer_mapping()
+        if layer_path in uploaded_layer_dict:
+            is_uploaded = 'uuid' in self.request.get_layer_detail(uploaded_layer_dict[layer_path]['uuid'])
+            return is_uploaded
+        return False
+
+    def build_scenario_detail_json(self):
+        # TODO: Get layer UUID from QGIS settings
+        old_scenario_dict = json.loads(json.dumps(todict(self.scenario), cls=CustomJsonEncoder))
+        uploaded_layer_dict = self.get_layer_mapping()
+        sieve_enabled = self.get_settings_value(Settings.SIEVE_ENABLED, default=False)
+        sieve_threshold =float(
+            self.get_settings_value(Settings.SIEVE_THRESHOLD, default=10.0)
+        )
+        sieve_mask_path = self.get_settings_value(
+            Settings.SIEVE_MASK_PATH, default=""
+        )
+        snapping_enabled = self.get_settings_value(
+            Settings.SNAPPING_ENABLED, default=False, setting_type=bool
+        ) if sieve_enabled else False
+        snap_layer_path = self.get_settings_value(
+            Settings.SNAP_LAYER, default="", setting_type=str
+        ) if snapping_enabled else False
+
+        suitability_index = float(
+            self.get_settings_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
+        )
+        carbon_coefficient = float(
+            self.get_settings_value(Settings.CARBON_COEFFICIENT, default=0.0)
+        )
+        snap_rescale = self.get_settings_value(
+            Settings.RESCALE_VALUES, default=False, setting_type=bool
+        )
+        resampling_method = self.get_settings_value(
+            Settings.RESAMPLING_METHOD, default=0
+        )
+        masking_layers = self.get_masking_layers()
+        mask_layer_uuids = [
+            obj['uuid'] for fp, obj in self.get_layer_mapping().items() if fp in masking_layers
+        ]
+
+        for activity in old_scenario_dict['activities']:
+            activity['layer_type'] = 0
+            for pathway in activity['pathways']:
+                if pathway:
+                    if pathway['path'] and os.path.exists(pathway['path']):
+                        if uploaded_layer_dict.get(pathway['path'], None):
+                            pathway['uuid'] = uploaded_layer_dict.get(pathway['path'])['uuid']
+                            pathway['layer_uuid'] = pathway['uuid']
+                            pathway['layer_type'] = 0
+
+                    carbon_uuids = []
+                    for carbon_path in pathway['carbon_paths']:
+                        if os.path.exists(carbon_path):
+                            if uploaded_layer_dict(carbon_path, None):
+                                carbon_uuids.append(uploaded_layer_dict(carbon_path))
+                    pathway['carbon_uuids'] = carbon_uuids
+
+            new_priority_layers = []
+            for priority_layer in activity['priority_layers']:
+                if priority_layer:
+                    if priority_layer['path'] and os.path.exists(priority_layer['path']):
+                        if uploaded_layer_dict.get(priority_layer['path'], None):
+                            priority_layer['uuid'] = uploaded_layer_dict.get(priority_layer['path'])['uuid']
+                            priority_layer['layer_uuid'] = priority_layer['uuid']
+                            new_priority_layer.append(priority_layer)
+            activity['priority_layers'] = new_priority_layers
+
+        self.scenario_detail = {
+            'scenario_name': old_scenario_dict['name'],
+            'scenario_desc': old_scenario_dict['description'],
+            'snapping_enabled': snapping_enabled if sieve_enabled else False,
+            'snap_layer': snap_layer_path,
+            'snap_layer_uuid': uploaded_layer_dict.get(snap_layer_path, "")['uuid'],
+            'pathway_suitability_index': suitability_index,
+            'carbon_coefficient': carbon_coefficient,
+            'snap_rescale': snap_rescale,
+            'snap_method': resampling_method,
+            'sieve_enabled': sieve_enabled,
+            'sieve_threshold': sieve_threshold,
+            'sieve_mask_path': sieve_mask_path,
+            'sieve_mask_uuid': uploaded_layer_dict.get(sieve_mask_path, "")['uuid'],
+            'mask_path': ', '.join(masking_layers),
+            'mask_layer_uuids': mask_layer_uuids,
+            'extent': old_scenario_dict['extent']['bbox'],
+            'priority_layer_groups': old_scenario_dict.get('priority_layer_groups', []),
+            'priority_layers': old_scenario_dict['activities'][0]['priority_layers'],
+            'activities': old_scenario_dict['activities']
+        }
 
     def __execute_scenario_analysis(self):
         # TODO: validate all layers exists in server
         # submit scenario detail to the API
         # TODO: build json
-        self.scenario_detail = SCENARIO_DETAIL
-        # scenario_uuid = self.request.submit_scenario_detail(scenario_detail)
-        scenario_uuid = "76daec8d-44fc-44a1-a944-f09dffbb249d"
+        scenario_uuid = self.request.submit_scenario_detail(self.scenario_detail)
+        # scenario_uuid = "76daec8d-44fc-44a1-a944-f09dffbb249d"
 
-        # # execute scenario detail
-        # self.request.execute_scenario(scenario_uuid)
-        # # fetch status by interval
-        # status_pooling = self.request.fetch_scenario_status(scenario_uuid)
-        # status_pooling.on_response_fetched = self.__update_scenario_status
-        # status_response = status_pooling.results()
-        # # if success, fetch output list
-        # scenario_status = status_response.get("status", "")
+        # execute scenario detail
+        self.request.execute_scenario(scenario_uuid)
+        # fetch status by interval
+        status_pooling = self.request.fetch_scenario_status(scenario_uuid)
+        status_pooling.on_response_fetched = self.__update_scenario_status
+        status_response = status_pooling.results()
+        # if success, fetch output list
+        scenario_status = status_response.get("status", "")
         self.new_scenario_detail = self.request.fetch_scenario_detail(scenario_uuid)
 
-        scenario_status = JOB_COMPLETED_STATUS
+        # scenario_status = JOB_COMPLETED_STATUS
         if scenario_status == JOB_COMPLETED_STATUS:
             self.__retrieve_scenario_outputs(scenario_uuid)
         elif scenario_status == JOB_STOPPED_STATUS:

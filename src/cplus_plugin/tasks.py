@@ -162,6 +162,15 @@ class ScenarioAnalysisTask(QgsTask):
     def get_priority_layers(self):
         return settings_manager.get_priority_layers()
 
+    def get_masking_layers(self):
+        masking_layers_paths = settings_manager.get_value(
+            Settings.MASK_LAYERS_PATHS, default=None
+        )
+        masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
+
+        masking_layers.remove("") if "" in masking_layers else None
+        return masking_layers
+
     def cancel_task(self, exception=None):
         self.cancel()
 
@@ -229,6 +238,7 @@ class ScenarioAnalysisTask(QgsTask):
             Settings.SNAPPING_ENABLED, default=False, setting_type=bool
         )
         reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
+        self.log_message(f"reference_layer: {reference_layer}")
         reference_layer_path = Path(reference_layer)
         if (
             snapping_enabled
@@ -279,13 +289,7 @@ class ScenarioAnalysisTask(QgsTask):
         )
 
         # Run masking of the activities layers
-
-        masking_layers_paths = settings_manager.get_value(
-            Settings.MASK_LAYERS_PATHS, default=None
-        )
-        masking_layers = masking_layers_paths.split(",") if masking_layers_paths else []
-
-        masking_layers.remove("") if "" in masking_layers else None
+        masking_layers = self.get_masking_layers()
 
         if masking_layers:
             self.run_activities_masking(
@@ -1214,6 +1218,7 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.set_status_message(tr("Masking activities using the saved masked layers"))
 
+        self.log_message(f"masking_layers: {json.dumps(masking_layers)}")
         try:
             for mask_layer_path in masking_layers:
                 mask_layer = QgsVectorLayer(mask_layer_path, "mask", "ogr")
@@ -1387,6 +1392,7 @@ class ScenarioAnalysisTask(QgsTask):
                 mask_layer = self.get_settings_value(
                     Settings.SIEVE_MASK_PATH, default=""
                 )
+                self.log_message(f"mask_layer: {mask_layer}")
 
                 output = (
                     QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file

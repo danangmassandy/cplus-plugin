@@ -1,4 +1,5 @@
 import json
+import time
 
 import requests
 
@@ -17,11 +18,11 @@ def upload_part(signed_url, file_data, file_part_number, max_retries=5):
         try:
             # ref: https://github.com/aws-samples/amazon-s3-multipart-upload-
             # transfer-acceleration/blob/main/frontendV2/src/utils/upload.js#L119
-            if signed_url.startswith('http://'):
+            if signed_url.startswith('http://minio:9000'):
+                signed_url = signed_url.replace('http://minio:9000', 'http://0.0.0.0:9010')
                 response = requests.put(signed_url, data=file_data, headers={'Host': 'minio:9000'})
             else:
                 response = requests.put(signed_url, data=file_data)
-            log(json.dumps(dict(response.headers)))
             return {
                 'part_number': file_part_number,
                 'etag': response.headers['ETag']
