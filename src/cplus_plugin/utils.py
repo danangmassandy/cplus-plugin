@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import uuid
+import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -467,6 +468,10 @@ class FileUtils:
 
 
 class CustomJsonEncoder(json.JSONEncoder):
+    """
+    Custom JSON encoder which handles UUID and datetime
+    """
+
     def default(self, obj):
         if isinstance(obj, UUID):
             # if the obj is uuid, we simply return the value of uuid
@@ -478,6 +483,10 @@ class CustomJsonEncoder(json.JSONEncoder):
 
 
 def todict(obj, classkey=None):
+    """
+    Convert any object to dictionary
+    """
+
     if isinstance(obj, dict):
         data = {}
         for (k, v) in obj.items():

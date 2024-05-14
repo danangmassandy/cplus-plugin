@@ -113,10 +113,6 @@ WidgetUi, _ = loadUiType(
 )
 
 
-# import pydevd_pycharm
-# pydevd_pycharm.settrace('127.0.0.1', port=53100, stdoutToServer=True, stderrToServer=True)
-
-
 class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     """Main plugin UI class"""
 
@@ -1249,7 +1245,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param report_manager: Report manager used to generate analysis reports
         :type report_manager: ReportManager
         """
-        # TODO: the post_analysis until fetch output from API is implemented
         self.update_progress_bar(progress_dialog, 100)
         self.scenario_result.analysis_output = task.output
         self.scenario_result.state = ScenarioState.FINISHED

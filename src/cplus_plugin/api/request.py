@@ -112,21 +112,15 @@ class CplusApiUrl:
     def __init__(self):
         self._api_token = None
         # TODO: retrieve base_url from QgisSettings
-        self.base_url = "http://0.0.0.0:9999/api/v1"
+        self.base_url = "https://stage.cplus.earth/api/v1"
         self.trends_urls = TrendsApiUrl()
 
     @property
     def api_token(self):
-        if self._api_token:
-            # TODO: validate its validity
-            return self._api_token
         # fetch token from Trends Earth API
         # TODO: retrieve username+pw from secured QgisSettings
         username = os.getenv("CPLUS_USERNAME", "")
         pw = os.getenv("CPLUS_PASSWORD", "")
-
-        username = 'zakki@kartoza.com'
-        pw = '94WF2R'
 
         response = requests.post(
             self.trends_urls.auth, json={"email": username, "password": pw}
@@ -226,7 +220,6 @@ class CplusApiRequest:
             "multipart_upload_id": upload_id,
             "items": items
         }
-        log(json.dumps(payload))
         response = self.post(self.urls.layer_upload_finish(layer_uuid), payload)
         result = response.json()
         return result

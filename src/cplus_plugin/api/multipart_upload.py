@@ -7,12 +7,20 @@ from ..utils import (
     log
 )
 
-BASE_URL = 'http://0.0.0.0:9999/api/v1'
+BASE_URL = 'https://stage.cplus.earth/api/v1'
 # chunk_size must be greater than 5MB, for now use 100MB
 CHUNK_SIZE = 100 * 1024 * 1024
 
 
 def upload_part(signed_url, file_data, file_part_number, max_retries=5):
+    """
+    Upload filepart to presigned S3 URL.
+    :param signed_url: presigned S3 URL
+    :param file_data: file chunk
+    :param file_part_number: the number/order of the file part
+    :param max_retries: maximum retry attempts
+    """
+
     retries = 0
     while retries < max_retries:
         try:

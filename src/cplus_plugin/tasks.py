@@ -3,101 +3,42 @@
  Plugin tasks related to the scenario analysis
 
 """
+import datetime
 import json
 import math
 import os
 import uuid
-
-import datetime
-
 from pathlib import Path
 
-from qgis.PyQt import QtCore, QtGui
-
+from qgis import processing
+from qgis.PyQt import QtCore
 from qgis.core import (
     Qgis,
-    QgsApplication,
-    QgsColorRampShader,
     QgsCoordinateReferenceSystem,
-    QgsCoordinateTransform,
-    QgsFeedback,
-    QgsGeometry,
-    QgsPalettedRasterRenderer,
-    QgsProject,
     QgsProcessing,
-    QgsProcessingAlgRunnerTask,
     QgsProcessingContext,
     QgsProcessingFeedback,
     QgsRasterLayer,
-    QgsRasterMinMaxOrigin,
-    QgsRasterShader,
     QgsRectangle,
-    QgsSingleBandPseudoColorRenderer,
-    QgsStyle,
-    QgsTask,
     QgsVectorLayer,
     QgsWkbTypes,
 )
-
-from qgis import processing
+from qgis.core import QgsTask
 
 from .conf import settings_manager, Settings
-
-from .resources import *
-
-from .models.helpers import clone_activity
-
-from .models.base import ScenarioResult, SpatialExtent
-
-from .utils import (
-    align_rasters,
-    clean_filename,
-    open_documentation,
-    tr,
-    log,
-    FileUtils,
-)
-
 from .definitions.defaults import (
     SCENARIO_OUTPUT_FILE_NAME,
 )
-
-from qgis.core import QgsTask
-
-import json
-from uuid import UUID
-
-
-class CustomJsonEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, UUID):
-            # if the obj is uuid, we simply return the value of uuid
-            return obj.hex
-        if isinstance(obj, datetime.datetime):
-            # if the obj is uuid, we simply return the value of uuid
-            return obj.isoformat()
-        return json.JSONEncoder.default(self, obj)
-
-
-def todict(obj, classkey=None):
-    if isinstance(obj, dict):
-        data = {}
-        for (k, v) in obj.items():
-            data[k] = todict(v, classkey)
-        return data
-    elif hasattr(obj, "_ast"):
-        return todict(obj._ast())
-    elif hasattr(obj, "__iter__") and not isinstance(obj, str):
-        return [todict(v, classkey) for v in obj]
-    elif hasattr(obj, "__dict__"):
-        data = dict([(key, todict(value, classkey))
-            for key, value in obj.__dict__.items()
-            if not callable(value) and not key.startswith('_')])
-        if classkey is not None and hasattr(obj, "__class__"):
-            data[classkey] = obj.__class__.__name__
-        return data
-    else:
-        return obj
+from .models.base import ScenarioResult, SpatialExtent
+from .models.helpers import clone_activity
+from .resources import *
+from .utils import (
+    align_rasters,
+    clean_filename,
+    tr,
+    log,
+    FileUtils
+)
 
 
 class ScenarioAnalysisTask(QgsTask):
@@ -238,7 +179,6 @@ class ScenarioAnalysisTask(QgsTask):
             Settings.SNAPPING_ENABLED, default=False, setting_type=bool
         )
         reference_layer = self.get_settings_value(Settings.SNAP_LAYER, default="")
-        self.log_message(f"reference_layer: {reference_layer}")
         reference_layer_path = Path(reference_layer)
         if (
             snapping_enabled
@@ -1218,7 +1158,6 @@ class ScenarioAnalysisTask(QgsTask):
 
         self.set_status_message(tr("Masking activities using the saved masked layers"))
 
-        self.log_message(f"masking_layers: {json.dumps(masking_layers)}")
         try:
             for mask_layer_path in masking_layers:
                 mask_layer = QgsVectorLayer(mask_layer_path, "mask", "ogr")
@@ -1392,7 +1331,6 @@ class ScenarioAnalysisTask(QgsTask):
                 mask_layer = self.get_settings_value(
                     Settings.SIEVE_MASK_PATH, default=""
                 )
-                self.log_message(f"mask_layer: {mask_layer}")
 
                 output = (
                     QgsProcessing.TEMPORARY_OUTPUT if temporary_output else output_file
