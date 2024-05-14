@@ -4,6 +4,7 @@
 """
 
 
+import hashlib
 import json
 import os
 import uuid
@@ -495,3 +496,14 @@ def todict(obj, classkey=None):
         return data
     else:
         return obj
+
+
+def md5(fname):
+    """
+    Get md5 checksum off a file
+    """
+    hash_md5 = hashlib.md5()
+    with open(fname, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
