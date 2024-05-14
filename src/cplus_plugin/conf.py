@@ -16,6 +16,7 @@ from qgis.PyQt import QtCore
 from qgis.core import QgsRectangle, QgsSettings
 
 from .definitions.defaults import PRIORITY_LAYERS
+from .utils import md5, todict, CustomJsonEncoder
 
 from .definitions.constants import (
     STYLE_ATTRIBUTE,
@@ -175,6 +176,8 @@ class Settings(enum.Enum):
 
     # Processing option
     PROCESSING_TYPE = "processing_type"
+
+#
 
 
 class SettingsManager(QtCore.QObject):
@@ -394,21 +397,6 @@ class SettingsManager(QtCore.QObject):
         return (
             f"{self.BASE_GROUP_NAME}/"
             f"{self.PRIORITY_LAYERS_GROUP_NAME}/"
-            f"{str(identifier)}"
-        )
-
-    def _get_layer_mapping_settings_base(self, identifier) -> str:
-        """Gets the layer mapping settings base url.
-
-        :param identifier: Input layer settings identifier
-        :type identifier: uuid.UUID
-
-        :returns: Layer mapping settings base group
-        :rtype: str
-        """
-        return (
-            f"{self.BASE_GROUP_NAME}/"
-            f"{self.LAYER_MAPPING_BASE}/"
             f"{str(identifier)}"
         )
 
@@ -731,6 +719,16 @@ class SettingsManager(QtCore.QObject):
             for priority_group in settings.childGroups():
                 settings.remove(priority_group)
 
+    def _get_layer_mappings_settings_base(self) -> str:
+        """Returns the path for Layer Mapping settings.
+
+        :returns: Base path to Layer Mapping group.
+        :rtype: str
+        """
+        return (
+            f"{self.BASE_GROUP_NAME}/{self.LAYER_MAPPING_BASE}"
+        )
+
     def get_layer_mapping(self, identifier) -> typing.Dict:
         """Retrieves the layer mapping that matches the passed identifier.
 
@@ -741,38 +739,18 @@ class SettingsManager(QtCore.QObject):
         :rtype: typing.Dict
         """
 
-        if identifier is None:
-            return None
+        layer_mapping = {}
 
-        settings_key = self._get_layer_mapping_settings_base(identifier)
-        with qgis_settings(settings_key) as settings:
-            layer_mapping = {"path": identifier}
-            layer_mapping["size"] = settings.value("size")
-            layer_mapping["name"] = settings.value("name")
-            layer_mapping["uuid"] = settings.value("uuid")
+        layer_mapping_root = self._get_layer_mappings_settings_base()
+
+        with qgis_settings(layer_mapping_root) as settings:
+            ncs_model = settings.value(identifier, dict())
+            if len(ncs_model) > 0:
+                try:
+                    layer_mapping = json.loads(ncs_model)
+                except json.JSONDecodeError:
+                    log("Layer Mapping JSON is invalid")
         return layer_mapping
-
-    def get_layer_mappings(self) -> typing.List[typing.Dict]:
-        """Gets all the available layer mappings in the plugin.
-
-        :returns: List of the layer mappings instances
-        :rtype: list
-        """
-        layer_mappings = []
-        with qgis_settings(
-                f"{self.BASE_GROUP_NAME}/" f"{self.LAYER_MAPPING_BASE}"
-        ) as settings:
-            for path in settings.childGroups():
-                layer_mapping_settings = self._get_layer_mapping_settings_base(path)
-                with qgis_settings(layer_mapping_settings) as layer_mapping_settings:
-                    group = {
-                        "uuid": path,
-                        "name": layer_mapping_settings.value("name"),
-                        "size": layer_mapping_settings.value("size"),
-                        "uuid": layer_mapping_settings.value("uuid")
-                    }
-                    layer_mappings.append(group)
-        return layer_mappings
 
     def save_layer_mapping(self, input_layer):
         """Save the layer mapping into the plugin settings
@@ -781,34 +759,11 @@ class SettingsManager(QtCore.QObject):
         :type layer_mapping: str
         """
 
-        settings_key = self._get_layer_mappings_settings_base(input_layer["path"])
+        identifier = md5(input_layer['path'])
+        settings_key = self._get_layer_mappings_settings_base()
 
         with qgis_settings(settings_key) as settings:
-            settings.setValue("name", input_layer["name"])
-            settings.setValue("size", input_layer["size"])
-            settings.setValue("uuid", input_layer["uuid"])
-            settings.setValue("path", input_layer["path"])
-
-    def delete_layer_mapping(self, identifier):
-        """Removes layer mapping that match the passed identifier
-
-        :param identifier: Layer mapping identifier
-        :type identifier: str
-        """
-        with qgis_settings(
-                f"{self.BASE_GROUP_NAME}/" f"{self.LAYER_MAPPING_BASE}/"
-        ) as settings:
-            for layer_mapping in settings.childGroups():
-                if str(layer_mapping) == str(identifier):
-                    settings.remove(layer_mapping)
-
-    def delete_layer_mappings(self):
-        """Deletes all the plugin layer mappings settings."""
-        with qgis_settings(
-                f"{self.BASE_GROUP_NAME}/" f"{self.LAYER_MAPPING_BASE}"
-        ) as settings:
-            for layer_mapping in settings.childGroups():
-                settings.remove(layer_mapping)
+            settings.setValue(identifier, json.dumps(input_layer))
 
     def _get_ncs_pathway_settings_base(self) -> str:
         """Returns the path for NCS pathway settings.

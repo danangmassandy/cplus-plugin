@@ -2,10 +2,8 @@ import concurrent.futures
 import json
 import os
 import traceback
-from urllib.parse import urlparse, parse_qs
 
 import requests
-from qgis.core import Qgis
 
 from .multipart_upload import upload_part
 from .request import CplusApiRequest, JOB_COMPLETED_STATUS, JOB_STOPPED_STATUS, CHUNK_SIZE
@@ -13,14 +11,8 @@ from ..conf import settings_manager, Settings
 from ..models.base import Activity, NcsPathway
 from ..models.base import ScenarioResult
 from ..tasks import ScenarioAnalysisTask
-from ..utils import FileUtils, CustomJsonEncoder, todict
+from ..utils import FileUtils, CustomJsonEncoder, todict, md5
 
-
-def separate_url_and_params(url):
-    parsed_url = urlparse(url)
-    url_without_params = parsed_url.scheme + "://" + parsed_url.netloc + parsed_url.path
-    params = parse_qs(parsed_url.query)
-    return url_without_params, params
 
 def download_file(url, local_filename):
     parent_dir = os.path.dirname(local_filename)
@@ -73,6 +65,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_upload_size = 0
         self.total_file_upload_chunks = 0
         self.uploaded_chunks = 0
+        self.checksum_to_uuid_mapping = {}
+        self.path_to_checksum_mapping = {}
 
     def cancel_task(self, exception=None):
         self.log_message('CANCELLED')
@@ -84,24 +78,24 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.request = CplusApiRequest()
         self.scenario_directory = self.get_scenario_directory()
         FileUtils.create_new_dir(self.scenario_directory)
+
         try:
             self.upload_layers()
         except Exception as e:
             self.log_message(str(e))
 
         self.build_scenario_detail_json()
-        self.log_message(json.dumps(self.scenario_detail, cls=CustomJsonEncoder))
 
-        # try:
-        #     self.__execute_scenario_analysis()
-        # except Exception as ex:
-        #     self.log_message(traceback.format_exc(), info=False)
-        #     err = f"Problem executing scenario analysis in the server side: {ex}\n"
-        #     self.log_message(err, info=False)
-        #     self.set_info_message(err, level=Qgis.Critical)
-        #     self.error = ex
-        #     self.cancel_task()
-        #     return False
+        try:
+            self.__execute_scenario_analysis()
+        except Exception as ex:
+            self.log_message(traceback.format_exc(), info=False)
+            err = f"Problem executing scenario analysis in the server side: {ex}\n"
+            self.log_message(err, info=False)
+            self.set_info_message(err, level=Qgis.Critical)
+            self.error = ex
+            self.cancel_task()
+            return False
         return True
 
     def run_upload(self, file_path, component_type):
@@ -151,11 +145,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         component_types = list(upload_dict.values())
 
         final_result = []
-        # for idx, fp in enumerate(file_paths):
-        #     result = self.run_upload(fp, component_types[idx])
-        #     final_result.append(result)
-
-
         with concurrent.futures.ThreadPoolExecutor(
                 max_workers=3 if os.cpu_count() > 3 else 1
         ) as executor:
@@ -165,15 +154,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                 component_types
             )))
         return list(final_result)
-
-    def get_layer_mapping(self):
-        # fr = open(self.file_mapping_path, 'r')
-        # uploaded_layer_dict = json.loads(fr.read())
-        # fr.close()
-        # return uploaded_layer_dict
-        layer_mapping = {lm['path']: lm for lm in settings_manager.get_layer_mappings()}
-        return layer_mapping
-
 
     def upload_layers(self):
         files_to_upload = {}
@@ -229,11 +209,8 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             if not is_uploaded:
                 files_to_upload[masking_layer] = 'mask_layer'
 
-        # for filepath, component_type in files_to_upload.items():
-            # run_upload(filepath, component_type)
         self.total_file_upload_size = sum(os.stat(fp).st_size for fp in files_to_upload)
         self.total_file_upload_chunks = self.total_file_upload_size / CHUNK_SIZE
-
         final_results = self.run_parallel_upload(files_to_upload)
 
         new_uploaded_layer = {}
@@ -245,26 +222,27 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
                     new_uploaded_layer[file_path] = res
                     break
 
-        for uploaded_layer in new_uploaded_layer:
+        for uploaded_layer in new_uploaded_layer.values():
             settings_manager.save_layer_mapping(uploaded_layer)
-
-        # uploaded_layer_dict = self.get_layer_mapping()
-        # with open(self.file_mapping_path, 'w') as fw:
-        #     uploaded_layer_dict.update(new_uploaded_layer)
-        #     fw.write(json.dumps(uploaded_layer_dict, sort_keys=True, indent=4))
 
     def __is_layer_uploaded(self, layer_path: str):
         # TODO: Check uploaded layer value from QGIS settings
-        uploaded_layer_dict = self.get_layer_mapping()
-        if layer_path in uploaded_layer_dict:
-            is_uploaded = 'uuid' in self.request.get_layer_detail(uploaded_layer_dict[layer_path]['uuid'])
-            return is_uploaded
+        identifier = md5(layer_path)
+        uploaded_layer_dict = settings_manager.get_layer_mapping(identifier)
+        if uploaded_layer_dict:
+            if layer_path == uploaded_layer_dict['path']:
+                is_uploaded = 'uuid' in self.request.get_layer_detail(uploaded_layer_dict['uuid'])
+                self.checksum_to_uuid_mapping[identifier] = uploaded_layer_dict
+                self.path_to_checksum_mapping[layer_path] = identifier
+                return is_uploaded
         return False
 
     def build_scenario_detail_json(self):
         # TODO: Get layer UUID from QGIS settings
         old_scenario_dict = json.loads(json.dumps(todict(self.scenario), cls=CustomJsonEncoder))
-        uploaded_layer_dict = self.get_layer_mapping()
+        uploaded_layer_dict = {
+            fp: self.checksum_to_uuid_mapping[checksum] for fp, checksum in self.path_to_checksum_mapping.items()
+        }
         sieve_enabled = json.loads(self.get_settings_value(Settings.SIEVE_ENABLED, default=False))
         sieve_threshold =float(
             self.get_settings_value(Settings.SIEVE_THRESHOLD, default=10.0)
@@ -278,7 +256,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         snap_layer_path = self.get_settings_value(
             Settings.SNAP_LAYER, default="", setting_type=str
         ) if snapping_enabled else ""
-
         suitability_index = float(
             self.get_settings_value(Settings.PATHWAY_SUITABILITY_INDEX, default=0)
         )
@@ -291,9 +268,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         resampling_method = self.get_settings_value(
             Settings.RESAMPLING_METHOD, default=0
         )
+
         masking_layers = self.get_masking_layers()
         mask_layer_uuids = [
-            obj['uuid'] for fp, obj in self.get_layer_mapping().items() if fp in masking_layers
+            obj['uuid'] for fp, obj in uploaded_layer_dict.items() if fp in masking_layers
         ]
 
         sieve_mask_uuid = uploaded_layer_dict.get(sieve_mask_path, "")['uuid'] if sieve_mask_path else ""
@@ -404,7 +382,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             os.path.basename(d): d for d in download_paths
         }
 
-        log(json.dumps(self.new_scenario_detail, cls=CustomJsonEncoder))
         for activity in self.new_scenario_detail['updated_detail']['activities']:
             activities.append(self.create_activity(activity, download_dict))
         for activity in self.new_scenario_detail['updated_detail']['weighted_activities']:
