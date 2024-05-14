@@ -1946,8 +1946,6 @@ class ScenarioAnalysisTask(QgsTask):
                 context=self.processing_context,
                 feedback=self.feedback,
             )
-            self.log_message('******************* OUTPUT *******************')
-            self.log_message(json.dumps(self.output))
 
         except Exception as err:
             self.log_message(
