@@ -9,7 +9,7 @@ from qgis.core import QgsFeedback
 
 from qgis.PyQt import QtCore
 
-from cplus_plugin.conf import (
+from cplus_core.utils.conf import (
     settings_manager,
     Settings,
 )

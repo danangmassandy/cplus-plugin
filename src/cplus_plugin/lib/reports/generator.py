@@ -43,7 +43,7 @@ from qgis.core import (
 
 from qgis.PyQt import QtCore, QtGui, QtXml
 
-from ...definitions.constants import (
+from cplus_core.definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_WEIGHTED_GROUP_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
@@ -57,8 +57,8 @@ from ...definitions.defaults import (
     PRIORITY_GROUP_WEIGHT_TABLE_ID,
 )
 from .layout_items import CplusMapRepeatItem
-from ...models.base import Activity
-from ...models.helpers import extent_to_project_crs_extent
+from cplus_core.models.base import Activity
+from cplus_core.models.helpers import extent_to_project_crs_extent
 from ...models.report import ReportContext, ReportResult
 from ...utils import (
     calculate_raster_value_area,

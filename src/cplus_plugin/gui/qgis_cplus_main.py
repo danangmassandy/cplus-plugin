@@ -51,8 +51,8 @@ from .priority_layer_dialog import PriorityLayerDialog
 from .progress_dialog import ProgressDialog
 from ..trends_earth import auth
 from ..api.scenario_task_api_client import ScenarioAnalysisTaskApiClient
-from ..conf import settings_manager, Settings
-from ..definitions.constants import (
+from cplus_core.utils.conf import settings_manager, Settings
+from cplus_core.definitions.constants import (
     ACTIVITY_GROUP_LAYER_NAME,
     ACTIVITY_IDENTIFIER_PROPERTY,
     ACTIVITY_WEIGHTED_GROUP_NAME,
@@ -67,51 +67,37 @@ from .priority_group_dialog import PriorityGroupDialog
 
 from .scenario_dialog import ScenarioDialog
 
-from ..models.base import (
+from cplus_core.models.financial import ActivityNpv
+
+from ..lib.extent_check import extent_within_pilot
+from ..lib.financials import create_npv_pwls
+
+from .components.custom_tree_widget import CustomTreeWidget
+
+from ..definitions.defaults import (
+    ADD_LAYER_ICON_PATH,
+    OPTIONS_TITLE,
+    ICON_PATH,
+    PLUGIN_MESSAGE_LOG_TAB,
+    QGIS_MESSAGE_LEVEL_DICT,
+    REMOVE_LAYER_ICON_PATH,
+    USER_DOCUMENTATION_SITE,
+    SCENARIO_LOG_FILE_NAME,
+    PILOT_AREA_EXTENT,
+    SCENARIO_OUTPUT_LAYER_NAME,
+    QGIS_GDAL_PROVIDER,
+)
+from ..lib.extent_check import extent_within_pilot
+from ..lib.reports.manager import report_manager, ReportManager
+from cplus_core.models.base import (
     PriorityLayerType,
     Scenario,
     ScenarioResult,
     ScenarioState,
     SpatialExtent,
 )
-from ..models.financial import ActivityNpv
-from ..conf import settings_manager, Settings
-
-from ..lib.extent_check import extent_within_pilot
-from ..lib.financials import create_npv_pwls
-from ..lib.reports.manager import report_manager, ReportManager
-
-from ..tasks import ScenarioAnalysisTask
-
-from .components.custom_tree_widget import CustomTreeWidget
-
 from ..resources import *
-
-from ..utils import (
-    open_documentation,
-    tr,
-    log,
-    FileUtils,
-    write_to_file,
-)
-from ..definitions.defaults import (
-    ADD_LAYER_ICON_PATH,
-    PILOT_AREA_EXTENT,
-    OPTIONS_TITLE,
-    ICON_PATH,
-    PLUGIN_MESSAGE_LOG_TAB,
-    QGIS_GDAL_PROVIDER,
-    QGIS_MESSAGE_LEVEL_DICT,
-    REMOVE_LAYER_ICON_PATH,
-    SCENARIO_OUTPUT_LAYER_NAME,
-    SCENARIO_LOG_FILE_NAME,
-    USER_DOCUMENTATION_SITE,
-)
-from ..lib.extent_check import extent_within_pilot
-from ..lib.reports.manager import report_manager, ReportManager
-from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..resources import *
-from ..tasks import ScenarioAnalysisTask
+from cplus_core.analysis import ScenarioAnalysisTask
 from ..utils import open_documentation, tr, log, FileUtils, write_to_file
 
 WidgetUi, _ = loadUiType(

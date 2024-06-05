@@ -19,10 +19,14 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
 from ..component_item_model import ActivityItemModel
-from ...conf import settings_manager
+from cplus_core.utils.conf import settings_manager
 from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ...models.base import Activity
-from ...models.financial import ActivityNpv, ActivityNpvCollection, NpvParameters
+from cplus_core.models.base import Activity
+from cplus_core.models.financial import (
+    ActivityNpv,
+    ActivityNpvCollection,
+    NpvParameters,
+)
 from .npv_financial_model import NpvFinancialModel
 from ...lib.financials import compute_discount_value
 from ...utils import FileUtils, open_documentation, tr

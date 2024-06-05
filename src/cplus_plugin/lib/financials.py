@@ -18,9 +18,12 @@ from qgis.core import (
 
 from qgis import processing
 
-from ..definitions.constants import NPV_PRIORITY_LAYERS_SEGMENT, PRIORITY_LAYERS_SEGMENT
-from ..conf import settings_manager, Settings
-from ..models.financial import ActivityNpvCollection
+from cplus_core.definitions.constants import (
+    NPV_PRIORITY_LAYERS_SEGMENT,
+    PRIORITY_LAYERS_SEGMENT,
+)
+from cplus_core.utils.conf import settings_manager, Settings
+from cplus_core.models.financial import ActivityNpvCollection
 from ..utils import clean_filename, FileUtils, log, tr
 
 

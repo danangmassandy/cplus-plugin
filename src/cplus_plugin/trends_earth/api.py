@@ -32,7 +32,7 @@ from qgis.core import (
 )
 from qgis.PyQt import QtCore, QtWidgets, QtNetwork
 
-from .. import conf
+from cplus_core.utils import conf
 from . import auth
 from ..utils import log
 

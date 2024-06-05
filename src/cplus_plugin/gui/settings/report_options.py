@@ -19,11 +19,11 @@ from qgis.utils import iface
 
 from qgis.PyQt.QtWidgets import QWidget
 
-from ...conf import (
+from cplus_core.utils.conf import (
     settings_manager,
     Settings,
 )
-from ...definitions.constants import CPLUS_OPTIONS_KEY, REPORTS_OPTIONS_KEY
+from cplus_core.definitions.constants import CPLUS_OPTIONS_KEY, REPORTS_OPTIONS_KEY
 from ...definitions.defaults import (
     DEFAULT_LOGO_PATH,
     OPTIONS_TITLE,

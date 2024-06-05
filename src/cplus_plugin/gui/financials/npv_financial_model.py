@@ -7,7 +7,7 @@ import typing
 
 from qgis.PyQt import QtCore, QtGui
 
-from ...definitions.constants import (
+from cplus_core.definitions.constants import (
     DISCOUNTED_VALUE_HEADER,
     MAX_YEARS,
     TOTAL_PROJECTED_COSTS_HEADER,

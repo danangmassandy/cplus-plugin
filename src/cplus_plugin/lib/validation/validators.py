@@ -10,7 +10,7 @@ import typing
 
 from qgis.core import QgsRasterLayer, QgsTask, QgsUnitTypes
 
-from ...definitions.constants import NO_DATA_VALUE
+from cplus_core.definitions.constants import NO_DATA_VALUE
 
 from .configs import (
     carbon_resolution_validation_config,
@@ -21,7 +21,7 @@ from .configs import (
     resolution_validation_config,
 )
 from .feedback import ValidationFeedback
-from ...models.base import LayerModelComponent, ModelComponentType, NcsPathway
+from cplus_core.models.base import LayerModelComponent, ModelComponentType, NcsPathway
 from ...models.validation import (
     RuleConfiguration,
     RuleInfo,

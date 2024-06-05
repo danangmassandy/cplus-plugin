@@ -16,9 +16,9 @@ from qgis.gui import (
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 from qgis.PyQt.uic import loadUiType
 
-from ..conf import settings_manager
+from cplus_core.utils.conf import settings_manager
 from ..lib.reports.layout_items import CplusMapRepeatItem, CPLUS_MAP_REPEAT_ITEM_TYPE
-from ..models.base import ModelComponentType
+from cplus_core.models.base import ModelComponentType
 from ..utils import FileUtils, tr
 
 
