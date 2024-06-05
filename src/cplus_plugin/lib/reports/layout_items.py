@@ -11,7 +11,7 @@ from qgis.core import (
 )
 from qgis.PyQt import QtGui
 
-from ...models.base import ModelComponentType
+from cplus_core.models.base import ModelComponentType
 from ...utils import FileUtils, tr
 
 

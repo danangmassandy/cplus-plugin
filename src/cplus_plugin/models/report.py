@@ -8,7 +8,7 @@ from uuid import UUID
 
 from qgis.core import QgsFeedback, QgsRectangle
 
-from .base import Scenario
+from cplus_core.models.base import Scenario
 
 
 @dataclasses.dataclass

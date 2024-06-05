@@ -22,7 +22,7 @@ from qgis.utils import iface
 
 from qgis.PyQt import QtCore, QtGui
 
-from ...models.base import Scenario, ScenarioResult
+from cplus_core.models.base import Scenario, ScenarioResult
 from ...models.report import ReportContext, ReportResult, ReportSubmitStatus
 from ...utils import clean_filename, FileUtils, log, tr
 

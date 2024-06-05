@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 from qgis.core import QgsExpressionContextUtils, QgsPrintLayout
 
-from ...conf import Settings, settings_manager
+from cplus_core.utils.conf import Settings, settings_manager
 from ...models.report import ReportContext
 from ...utils import tr
 
