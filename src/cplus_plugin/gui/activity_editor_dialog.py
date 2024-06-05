@@ -21,15 +21,15 @@ from qgis.PyQt import QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from ..conf import Settings, settings_manager
-from ..definitions.constants import (
+from cplus_core.utils.conf import Settings, settings_manager
+from cplus_core.definitions.constants import (
     COLOR_RAMP_PROPERTIES_ATTRIBUTE,
     COLOR_RAMP_TYPE_ATTRIBUTE,
     ACTIVITY_LAYER_STYLE_ATTRIBUTE,
     ACTIVITY_SCENARIO_STYLE_ATTRIBUTE,
 )
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
-from ..models.base import Activity
+from cplus_core.models.base import Activity
 from ..utils import FileUtils, open_documentation, tr
 
 WidgetUi, _ = loadUiType(

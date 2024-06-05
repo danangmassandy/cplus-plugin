@@ -12,7 +12,7 @@ from qgis.PyQt.uic import loadUiType
 
 from qgis.gui import QgsGui
 
-from ..conf import settings_manager
+from cplus_core.utils.conf import settings_manager
 from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ..utils import FileUtils, open_documentation
 

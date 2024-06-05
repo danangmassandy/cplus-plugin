@@ -7,19 +7,20 @@ import os
 import uuid
 
 from qgis.PyQt import (
-    QtCore,
     QtGui,
-    QtNetwork,
     QtWidgets,
 )
 from qgis.PyQt.uic import loadUiType
 
 from qgis.gui import QgsFileWidget
 
-from ..conf import settings_manager, Settings
+from cplus_core.utils.conf import settings_manager, Settings
 from ..utils import FileUtils, open_documentation
-from ..definitions.defaults import ICON_PATH, PRIORITY_LAYERS, USER_DOCUMENTATION_SITE
-from ..definitions.constants import PRIORITY_LAYERS_SEGMENT, USER_DEFINED_ATTRIBUTE
+from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE, PRIORITY_LAYERS
+from cplus_core.definitions.constants import (
+    PRIORITY_LAYERS_SEGMENT,
+    USER_DEFINED_ATTRIBUTE,
+)
 
 from .items_selection_dialog import ItemsSelectionDialog
 

@@ -13,7 +13,7 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from ...conf import settings_manager
+from cplus_core.utils.conf import settings_manager
 from ...definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
 from ...lib.validation.manager import validation_manager
 from ...models.validation import ValidationResult

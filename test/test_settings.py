@@ -4,7 +4,7 @@ from utilities_for_testing import get_qgis_app
 
 from cplus_plugin.gui.settings.cplus_options import CplusSettings
 from cplus_plugin.gui.settings.report_options import ReportSettingsWidget
-from cplus_plugin.conf import (
+from cplus_core.utils.conf import (
     settings_manager,
     Settings,
 )

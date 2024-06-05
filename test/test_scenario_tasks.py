@@ -14,10 +14,10 @@ from processing.core.Processing import Processing
 
 from qgis.core import QgsRasterLayer
 
-from cplus_plugin.conf import settings_manager, Settings
+from cplus_core.utils.conf import settings_manager, Settings
 
-from cplus_plugin.tasks import ScenarioAnalysisTask
-from cplus_plugin.models.base import Scenario, NcsPathway, Activity
+from cplus_core.analysis import ScenarioAnalysisTask
+from cplus_core.models.base import Scenario, NcsPathway, Activity
 
 
 class ScenarioAnalysisTaskTest(unittest.TestCase):

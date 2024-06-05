@@ -6,7 +6,7 @@
 
 import unittest
 
-from cplus_plugin.conf import settings_manager
+from cplus_core.utils.conf import settings_manager
 
 from data.priority_weighting_layers import PRIORITY_LAYERS
 

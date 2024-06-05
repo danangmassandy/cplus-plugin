@@ -14,10 +14,9 @@ from .request import (
     JOB_STOPPED_STATUS,
     CHUNK_SIZE,
 )
-from ..conf import settings_manager, Settings
-from ..models.base import Activity, NcsPathway
-from ..models.base import ScenarioResult
-from ..tasks import ScenarioAnalysisTask
+from cplus_core.utils.conf import settings_manager, Settings
+from cplus_core.models.base import Activity, NcsPathway, ScenarioResult
+from cplus_core.analysis import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 
 

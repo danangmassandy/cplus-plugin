@@ -13,13 +13,13 @@ from qgis.PyQt import QtCore, QtWidgets
 
 from qgis.PyQt.uic import loadUiType
 
-from ..conf import Settings, settings_manager
+from cplus_core.utils.conf import Settings, settings_manager
 from .component_item_model import ActivityItem, ModelComponentItemType
 from .model_component_widget import (
     ActivityComponentWidget,
     NcsComponentWidget,
 )
-from ..models.base import Activity, NcsPathway
+from cplus_core.models.base import Activity, NcsPathway
 
 from ..utils import FileUtils
 

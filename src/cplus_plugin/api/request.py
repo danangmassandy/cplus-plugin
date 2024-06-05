@@ -6,7 +6,7 @@ import time
 import requests
 
 from ..utils import log, get_layer_type
-from ..conf import settings_manager, Settings
+from cplus_core.utils.conf import settings_manager, Settings
 from ..trends_earth import auth
 from ..trends_earth.constants import API_URL as TRENDS_EARTH_API_URL
 from ..definitions.defaults import BASE_API_URL

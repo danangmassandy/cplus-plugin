@@ -27,11 +27,11 @@ from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QFileDialog, QListWidgetItem, QMessageBox, QWidget
 from qgis.PyQt import QtCore
 
-from ...conf import (
+from cplus_core.utils.conf import (
     settings_manager,
     Settings,
 )
-from ...definitions.constants import CPLUS_OPTIONS_KEY
+from cplus_core.definitions.constants import CPLUS_OPTIONS_KEY
 from ...definitions.defaults import (
     GENERAL_OPTIONS_TITLE,
     ICON_PATH,

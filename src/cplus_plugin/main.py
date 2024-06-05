@@ -32,8 +32,8 @@ from .gui.qgis_cplus_main import QgisCplusMain
 from qgis.PyQt.QtWidgets import QToolButton
 from qgis.PyQt.QtWidgets import QMenu
 
-from .conf import Settings, settings_manager
-from .definitions.constants import (
+from cplus_core.utils.conf import Settings, settings_manager
+from cplus_core.definitions.constants import (
     CARBON_PATHS_ATTRIBUTE,
     COLOR_RAMP_PROPERTIES_ATTRIBUTE,
     COLOR_RAMP_TYPE_ATTRIBUTE,
@@ -50,17 +50,17 @@ from .definitions.defaults import (
     ABOUT_DOCUMENTATION_SITE,
     CI_LOGO_PATH,
     CPLUS_LOGO_PATH,
-    DEFAULT_ACTIVITIES,
-    DEFAULT_NCS_PATHWAYS,
     DEFAULT_REPORT_DISCLAIMER,
     DEFAULT_REPORT_LICENSE,
     DOCUMENTATION_SITE,
     ICON_PATH,
     OPTIONS_TITLE,
-    PRIORITY_GROUPS,
-    PRIORITY_LAYERS,
     BASE_API_URL,
     REPORT_FONT_NAME,
+    DEFAULT_ACTIVITIES,
+    DEFAULT_NCS_PATHWAYS,
+    PRIORITY_GROUPS,
+    PRIORITY_LAYERS,
 )
 from .gui.map_repeat_item_widget import CplusMapLayoutItemGuiMetadata
 from .lib.reports.layout_items import CplusMapRepeatItemLayoutItemMetadata

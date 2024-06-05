@@ -17,7 +17,7 @@ from qgis.core import QgsApplication
 from qgis.core import QgsAuthMethodConfig
 from qgis.utils import iface
 
-from ..conf import settings_manager
+from cplus_core.utils.conf import settings_manager
 from ..utils import log
 
 

@@ -8,7 +8,7 @@ from uuid import UUID
 
 from qgis.core import QgsRasterLayer
 
-from cplus_plugin.definitions.constants import (
+from cplus_core.definitions.constants import (
     CARBON_COEFFICIENT_ATTRIBUTE,
     CARBON_PATHS_ATTRIBUTE,
     NAME_ATTRIBUTE,
@@ -19,8 +19,8 @@ from cplus_plugin.definitions.constants import (
     USER_DEFINED_ATTRIBUTE,
     UUID_ATTRIBUTE,
 )
-from cplus_plugin.definitions.defaults import PILOT_AREA_EXTENT
-from cplus_plugin.models.base import (
+from cplus_core.definitions.defaults import PILOT_AREA_EXTENT
+from cplus_core.models.base import (
     Activity,
     LayerType,
     NcsPathway,

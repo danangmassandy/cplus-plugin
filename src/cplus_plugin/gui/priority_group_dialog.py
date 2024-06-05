@@ -14,12 +14,12 @@ from qgis.PyQt import (
 )
 from qgis.PyQt.uic import loadUiType
 
-from ..models.base import PriorityLayer
+from cplus_core.models.base import PriorityLayer
 
-from ..conf import settings_manager
+from cplus_core.utils.conf import settings_manager
 from ..utils import FileUtils, open_documentation
-from ..definitions.defaults import ICON_PATH, PRIORITY_GROUPS, USER_DOCUMENTATION_SITE
-from ..definitions.constants import PRIORITY_LAYERS_SEGMENT, USER_DEFINED_ATTRIBUTE
+from ..definitions.defaults import ICON_PATH, USER_DOCUMENTATION_SITE
+from cplus_core.definitions.constants import USER_DEFINED_ATTRIBUTE
 
 from .items_selection_dialog import ItemsSelectionDialog
 
