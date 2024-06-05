@@ -28,7 +28,7 @@ from cplus_core.models.base import (
     ScenarioResult,
     SpatialExtent,
 )
-from cplus_plugin.models.financial import (
+from cplus_core.models.financial import (
     ActivityNpv,
     ActivityNpvCollection,
     NpvParameters,
