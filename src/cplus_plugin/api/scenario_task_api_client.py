@@ -577,7 +577,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         self.new_scenario_detail = self.request.fetch_scenario_detail(scenario_uuid)
 
         if self.scenario_status == JOB_COMPLETED_STATUS:
-            self.__retrieve_scenario_outputs(scenario_uuid)
+            self._retrieve_scenario_outputs(scenario_uuid)
         elif self.scenario_status == JOB_STOPPED_STATUS:
             scenario_error = status_response.get("errors", "Unknown error")
             raise Exception(scenario_error)
@@ -625,7 +625,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                 }
             )
 
-    def __retrieve_scenario_outputs(self, scenario_uuid):
+    def _retrieve_scenario_outputs(self, scenario_uuid):
         """
         Set scenario output object based on scenario UUID
         to be used in generating report

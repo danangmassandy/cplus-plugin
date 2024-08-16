@@ -6,7 +6,8 @@ import uuid
 
 import requests
 
-from ..models.base import Scenario, SpatialExtent
+from ..models.base import Scenario, SpatialExtent, Activity
+
 from ..utils import log, get_layer_type
 from ..conf import settings_manager, Settings
 from ..trends_earth import auth
@@ -338,9 +339,12 @@ class CplusApiRequest:
                     description=detail.get("scenario_desc", ""),
                     extent=SpatialExtent(bbox=extent),
                     server_uuid=uuid.UUID(item["uuid"]),
-                    activities=[],
+                    activities=[
+                        Activity.from_dict(activity)
+                        for activity in detail["activities"]
+                    ],
                     weighted_activities=[],
-                    priority_layer_groups=[],
+                    priority_layer_groups=detail["priority_layer_groups"],
                 )
             )
         return scenario_results

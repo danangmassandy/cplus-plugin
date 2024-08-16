@@ -281,10 +281,38 @@ class BaseFetchScenarioOutput:
         return scenario, scenario_result
 
 
+# from .scenario_task_api_client import ScenarioAnalysisTaskApiClient
+
 class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
     """Fetch scenario output from API."""
 
     task_finished = QtCore.pyqtSignal(object, object)
+
+    # def __init__(
+    #     self,
+    #     analysis_scenario_name,
+    #     analysis_scenario_description,
+    #     analysis_activities,
+    #     analysis_priority_layers_groups,
+    #     analysis_extent,
+    #     scenario,
+    #     scenario_directory,
+    # ):
+    #     super().__init__(
+    #         analysis_scenario_name,
+    #         analysis_scenario_description,
+    #         analysis_activities,
+    #         analysis_priority_layers_groups,
+    #         analysis_extent,
+    #         scenario,
+    #     )
+    #     self.status_pooling = None
+    #     self.logs = []
+    #     self.total_file_output = 0
+    #     self.downloaded_output = 0
+    #     self.scenario_status = None
+    #     self.scenario_directory = scenario_directory
+    #     self.scenario_api_uuid = scenario.uuid
 
     def __init__(self, scenario: Scenario):
         """Task initialization.
@@ -297,6 +325,7 @@ class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
         self.scenario_directory = None
         self.processing_cancelled = False
         self.scenario_result = None
+        self.output_list = None
 
     def get_scenario_directory(self):
         """Generate scenario directory from output datetime.
@@ -342,6 +371,7 @@ class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
             output_list = self.request.fetch_scenario_output_list(
                 self.scenario.server_uuid
             )
+            self.output_list = output_list
             updated_scenario, scenario_result = self.fetch_scenario_output(
                 self.scenario,
                 scenario_data["updated_detail"],
@@ -373,7 +403,7 @@ class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
             log("Failed download scenario outputs!", info=False)
         log('finished')
         # log(json.dumps(todict(self.scenario_result), cls=CustomJsonEncoder))
-        self.task_finished.emit(self.scenario, self.scenario_result)
+        # self.task_finished.emit(self.scenario, self.scenario_result)
 
     def fetch_scenario_detail(self):
         """Fetch scenario detail from API.

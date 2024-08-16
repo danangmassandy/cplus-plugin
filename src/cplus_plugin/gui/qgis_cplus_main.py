@@ -101,7 +101,7 @@ from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..tasks import ScenarioAnalysisTask
-from ..utils import open_documentation, tr, log, FileUtils, write_to_file
+from ..utils import open_documentation, tr, log, FileUtils, write_to_file, todict, CustomJsonEncoder
 
 
 WidgetUi, _ = loadUiType(
@@ -172,11 +172,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         QgsApplication.messageLog().messageReceived.connect(
             self.on_log_message_received
         )
-
-        # Scenario list
-
-        self.update_scenario_list()
-        self.fetch_scenario_history_list()
 
     def outputs_options_changed(self):
         """
@@ -1268,11 +1263,63 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario.weighted_activities = all_activities
 
         log(f"scenario and scenario.server_uuid: {scenario and scenario.server_uuid}")
+        log(json.dumps(todict(scenario), cls=CustomJsonEncoder))
+        return
         if scenario_result:
             scenario_result.scenario = scenario
         elif scenario and scenario.server_uuid:
+            # self.analysis_scenario_name = scenario.name
+            # self.analysis_scenario_description = scenario.description
+            # self.analysis_extent = SpatialExtent(
+            #     bbox=extent_list
+            # )
+            # self.analysis_activities = [
+            #     Activity.from_dict(activity)
+            #     for activity in online_task["task"]["analysis_activities"]
+            # ]
+            # self.analysis_priority_layers_groups = online_task["task"][
+            #     "analysis_priority_layers_groups"
+            # ]
+            #
+            # scenario = Scenario(
+            #     uuid=online_task["uuid"],
+            #     name=self.analysis_scenario_name,
+            #     description=self.analysis_scenario_description,
+            #     extent=self.analysis_extent,
+            #     activities=self.analysis_activities,
+            #     weighted_activities=[],
+            #     priority_layer_groups=self.analysis_priority_layers_groups,
+            # )
+            #
+            # self.processing_cancelled = False
+            #
+            # progress_dialog = ProgressDialog(
+            #     minimum=0,
+            #     maximum=100,
+            #     main_widget=self,
+            #     scenario_id=str(scenario.uuid),
+            #     scenario_name=self.analysis_scenario_name,
+            # )
+            # progress_dialog.analysis_cancelled.connect(
+            #     self.on_progress_dialog_cancelled
+            # )
+            # progress_dialog.run_dialog()
+            #
+            # analysis_task = ScenarioTaskOutputDownload(
+            #     self.analysis_scenario_name,
+            #     self.analysis_scenario_description,
+            #     self.analysis_activities,
+            #     self.analysis_priority_layers_groups,
+            #     self.analysis_extent,
+            #     scenario,
+            #     online_task["directory"],
+            # )
+            # analysis_task.scenario_api_uuid = online_task["online_uuid"]
+            #
+            # self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
+
+
             # needs to load the output from server
-            from ..utils import CustomJsonEncoder
             task = FetchScenarioOutputTask(scenario)
 
             analysis_task = ScenarioAnalysisTaskApiClient(
@@ -1444,10 +1491,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :type scenario_result: ScenarioResult
         """
         self.scenario_result = scenario_result
-        # scenario = self.current_analysis_task.scenario
-        # scenario_result = ScenarioResult(
-        #     scenario=scenario, scenario_directory=self.current_analysis_task.scenario_directory
-        # )
         progress_dialog = ProgressDialog(
             minimum=0,
             maximum=100,
@@ -1479,7 +1522,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         self.current_analysis_task.taskCompleted.connect(analysis_complete)
 
         analysis_terminated = partial(self.task_terminated, self.current_analysis_task)
-        self.post_analysis(scenario_result, self.current_analysis_task, scenario_report_manager, progress_dialog)
+        # self.post_analysis(scenario_result, self.current_analysis_task, scenario_report_manager, progress_dialog)
+        self.post_analysis(scenario_result, None, scenario_report_manager, progress_dialog)
         self.update_scenario_list()
 
     def has_trends_auth(self):
@@ -1494,6 +1538,46 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             and auth_config.config("username")
             and auth_config.config("password")
         )
+
+    def run_cplus_main_task(self, progress_dialog, scenario, analysis_task):
+        progress_changed = partial(self.update_progress_bar, progress_dialog)
+        analysis_task.custom_progress_changed.connect(progress_changed)
+
+        status_message_changed = partial(self.update_progress_dialog, progress_dialog)
+
+        analysis_task.status_message_changed.connect(status_message_changed)
+
+        analysis_task.info_message_changed.connect(self.show_message)
+
+        self.current_analysis_task = analysis_task
+
+        progress_dialog.analysis_task = analysis_task
+        progress_dialog.scenario_id = str(scenario.uuid)
+
+        report_running = partial(self.on_report_running, progress_dialog)
+        report_error = partial(self.on_report_error, progress_dialog)
+        report_finished = partial(self.on_report_finished, progress_dialog)
+
+        # Report manager
+        scenario_report_manager = report_manager
+
+        scenario_report_manager.generate_started.connect(report_running)
+        scenario_report_manager.generate_error.connect(report_error)
+        scenario_report_manager.generate_completed.connect(report_finished)
+
+        analysis_complete = partial(
+            self.analysis_complete,
+            analysis_task,
+            scenario_report_manager,
+            progress_dialog,
+        )
+
+        analysis_task.taskCompleted.connect(analysis_complete)
+
+        analysis_terminated = partial(self.task_terminated, analysis_task)
+        analysis_task.taskTerminated.connect(analysis_terminated)
+
+        QgsApplication.taskManager().addTask(analysis_task)
 
     def prepare_message_bar(self):
         """Initializes the widget message bar settings"""
@@ -1734,46 +1818,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     scenario,
                 )
 
-            progress_changed = partial(self.update_progress_bar, progress_dialog)
-            analysis_task.custom_progress_changed.connect(progress_changed)
-
-            status_message_changed = partial(
-                self.update_progress_dialog, progress_dialog
-            )
-
-            analysis_task.status_message_changed.connect(status_message_changed)
-
-            analysis_task.info_message_changed.connect(self.show_message)
-
-            self.current_analysis_task = analysis_task
-
-            progress_dialog.analysis_task = analysis_task
-            progress_dialog.scenario_id = str(scenario.uuid)
-
-            report_running = partial(self.on_report_running, progress_dialog)
-            report_error = partial(self.on_report_error, progress_dialog)
-            report_finished = partial(self.on_report_finished, progress_dialog)
-
-            # Report manager
-            scenario_report_manager = report_manager
-
-            scenario_report_manager.generate_started.connect(report_running)
-            scenario_report_manager.generate_error.connect(report_error)
-            scenario_report_manager.generate_completed.connect(report_finished)
-
-            analysis_complete = partial(
-                self.analysis_complete,
-                analysis_task,
-                scenario_report_manager,
-                progress_dialog,
-            )
-
-            analysis_task.taskCompleted.connect(analysis_complete)
-
-            analysis_terminated = partial(self.task_terminated, analysis_task)
-            analysis_task.taskTerminated.connect(analysis_terminated)
-
-            QgsApplication.taskManager().addTask(analysis_task)
+            self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
         except Exception as err:
             self.show_message(
