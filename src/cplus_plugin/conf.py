@@ -158,6 +158,7 @@ class ScenarioSettings(Scenario):
 
         with qgis_settings(spatial_key) as settings:
             bbox = settings.value("bbox", None)
+            bbox = [float(b) for b in bbox]
             spatial_extent = SpatialExtent(bbox=bbox)
 
         return spatial_extent

@@ -3,7 +3,8 @@
  Plugin tasks related to the scenario history
 
 """
-
+import copy
+import json
 import os
 import datetime
 import concurrent.futures
@@ -15,7 +16,7 @@ import requests
 
 from ..models.base import Scenario, ScenarioResult, NcsPathway, Activity
 from ..conf import settings_manager, Settings
-from ..utils import log
+from ..utils import log, todict, CustomJsonEncoder
 from .request import CplusApiRequest
 
 
@@ -193,7 +194,7 @@ class BaseFetchScenarioOutput:
         for activity in scenario_detail["weighted_activities"]:
             weighted_activities.append(self.__create_activity(activity, download_dict))
 
-        return Scenario(
+        scenario = Scenario(
             uuid=original_scenario.uuid,
             name=original_scenario.name,
             description=original_scenario.description,
@@ -203,6 +204,7 @@ class BaseFetchScenarioOutput:
             priority_layer_groups=scenario_detail["priority_layer_groups"],
             server_uuid=original_scenario.server_uuid,
         )
+        return scenario
 
     def __validate_output_paths(self, download_paths):
         """Validate whether all output paths exist.
@@ -212,10 +214,11 @@ class BaseFetchScenarioOutput:
         :return: True if all paths exist
         :rtype: bool
         """
-        for path in download_paths:
+        invalid_indexes = []
+        for idx, path in enumerate(download_paths):
             if not os.path.exists(path):
-                return False
-        return True
+                invalid_indexes.append(idx)
+        return len(invalid_indexes) == 0, invalid_indexes
 
     def fetch_scenario_output(
         self, original_scenario, scenario_detail, output_list, scenario_directory
@@ -250,17 +253,24 @@ class BaseFetchScenarioOutput:
                 )
             download_paths.append(download_path)
 
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=3 if os.cpu_count() > 3 else 1
-        ) as executor:
-            executor.map(self.download_file, urls_to_download, download_paths)
-        if self.is_download_cancelled():
-            return None, None
+        download_paths_copy = copy.deepcopy(download_paths)
+        while len(urls_to_download) > 0:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=3 if os.cpu_count() > 3 else 1
+            ) as executor:
+                executor.map(self.download_file, urls_to_download, download_paths_copy)
+            if self.is_download_cancelled():
+                return None, None
+            is_valid, invalid_indexes = self.__validate_output_paths(download_paths)
+            urls_to_download = [urls_to_download[idx] for idx in invalid_indexes]
+            download_paths_copy = [download_paths_copy[idx] for idx in invalid_indexes]
+
         if not self.__validate_output_paths(download_paths):
             return None, None
         scenario = self.__create_scenario(
             original_scenario, scenario_detail, output_list, download_paths
         )
+        log(json.dumps(final_output))
 
         scenario_result = ScenarioResult(
             scenario=scenario,
@@ -273,6 +283,8 @@ class BaseFetchScenarioOutput:
 
 class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
     """Fetch scenario output from API."""
+
+    task_finished = QtCore.pyqtSignal(object, object)
 
     def __init__(self, scenario: Scenario):
         """Task initialization.
@@ -320,7 +332,13 @@ class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
             )
             self.scenario_directory = self.get_scenario_directory()
             if os.path.exists(self.scenario_directory):
-                shutil.rmtree(self.scenario_directory)
+                for file in os.listdir(self.scenario_directory):
+                    if file != 'processing.log':
+                        path = os.path.join(self.scenario_directory, file)
+                        if os.path.isdir(path):
+                            shutil.rmtree(os.path.join(self.scenario_directory, file))
+                        else:
+                            os.remove(path)
             output_list = self.request.fetch_scenario_output_list(
                 self.scenario.server_uuid
             )
@@ -353,7 +371,9 @@ class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
                 )
         elif not self.processing_cancelled:
             log("Failed download scenario outputs!", info=False)
-        self.task_finished.emit(self.scenario_result)
+        log('finished')
+        # log(json.dumps(todict(self.scenario_result), cls=CustomJsonEncoder))
+        self.task_finished.emit(self.scenario, self.scenario_result)
 
     def fetch_scenario_detail(self):
         """Fetch scenario detail from API.

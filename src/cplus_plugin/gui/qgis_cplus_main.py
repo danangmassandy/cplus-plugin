@@ -7,6 +7,8 @@
 import datetime
 import os
 import uuid
+import json
+from dateutil import tz
 from functools import partial
 from pathlib import Path
 
@@ -261,10 +263,24 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         if tag == PLUGIN_MESSAGE_LOG_TAB:
             # If there is no current running analysis
             # task don't save the log message.
+
+            # commenting this for now
+            write_to_file(str(not self.current_analysis_task), '/home/zamuzakki/cplus.txt')
             if not self.current_analysis_task:
                 return
 
-            message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            try:
+                to_zone = tz.tzlocal()
+                message_dict = json.loads(message)
+                if sorted(list(message_dict.keys())) == ['date_time', 'log']:
+                    message = message_dict['log']
+                    message_time = message_dict['date_time'].replace("Z", "+00:00")
+                    message_time = datetime.datetime.fromisoformat(message_time)
+                    message_time = message_time.astimezone(to_zone).strftime("%Y-%m-%dT%H:%M:%S")
+                else:
+                    message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            except Exception:
+                message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             message = (
                 f"{self.log_text_box.toPlainText()} "
                 f"{message_time} {QGIS_MESSAGE_LEVEL_DICT[level]} "
@@ -280,7 +296,8 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     SCENARIO_LOG_FILE_NAME,
                 )
                 write_to_file(message, processing_log_file)
-            except TypeError:
+            except TypeError as e:
+                write_to_file(str(e), '/home/zamuzakki/cplus.txt')
                 pass
 
     def prepare_input(self):
@@ -1188,6 +1205,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def load_scenario(self):
         """Edits the current selected scenario
         and updates the layer box list."""
+        from ..api.request import (
+            CplusApiRequest,
+            JOB_COMPLETED_STATUS,
+            JOB_STOPPED_STATUS,
+            CHUNK_SIZE,
+        )
+
         if self.scenario_list.currentItem() is None:
             self.show_message(
                 tr("Select first the scenario from the scenario list."),
@@ -1243,15 +1267,38 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         scenario.weighted_activities = all_activities
 
+        log(f"scenario and scenario.server_uuid: {scenario and scenario.server_uuid}")
         if scenario_result:
             scenario_result.scenario = scenario
         elif scenario and scenario.server_uuid:
             # needs to load the output from server
+            from ..utils import CustomJsonEncoder
             task = FetchScenarioOutputTask(scenario)
+
+            analysis_task = ScenarioAnalysisTaskApiClient(
+                analysis_scenario_name=scenario.name,
+                analysis_scenario_description=scenario.description,
+                analysis_activities=scenario.activities,
+                analysis_priority_layers_groups=scenario.priority_layer_groups,
+                analysis_extent=scenario.extent,
+                scenario=scenario,
+                extent_box=scenario.extent,
+            )
+            scenario_data = task.fetch_scenario_detail()
+            task.created_datetime = datetime.datetime.strptime(
+                scenario_data["submitted_on"], "%Y-%m-%dT%H:%M:%SZ"
+            )
+            analysis_task.scenario_directory = task.get_scenario_directory()
+            self.current_analysis_task = analysis_task
+            request = CplusApiRequest()
+            status_pooling = request.fetch_scenario_status(scenario.server_uuid)
+            status_pooling.on_response_fetched = analysis_task._update_scenario_status
+            status_pooling.results()
+
+            log(f"self.fetch_scenario: {str(task.scenario_directory)}")
             task.task_finished.connect(self.on_fetch_scenario_output_finished)
             QgsApplication.taskManager().addTask(task)
-
-        self.post_analysis(scenario_result, None, None, None)
+            log("finished fetching scenario")
 
     def show_scenario_info(self):
         """Loads dialog for showing scenario information."""
@@ -1390,13 +1437,49 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             return
         self.update_scenario_list()
 
-    def on_fetch_scenario_output_finished(self, scenario_result):
+    def on_fetch_scenario_output_finished(self, scenario, scenario_result):
         """Callback when plugin has finished downloading scenario output.
 
         :param scenario_result: Scenario result from API
         :type scenario_result: ScenarioResult
         """
-        self.post_analysis(scenario_result, None, None, None)
+        self.scenario_result = scenario_result
+        # scenario = self.current_analysis_task.scenario
+        # scenario_result = ScenarioResult(
+        #     scenario=scenario, scenario_directory=self.current_analysis_task.scenario_directory
+        # )
+        progress_dialog = ProgressDialog(
+            minimum=0,
+            maximum=100,
+            main_widget=self,
+            scenario_id=str(scenario.uuid),
+            scenario_name=self.analysis_scenario_name,
+        )
+        progress_dialog.analysis_task = self.current_analysis_task
+        progress_dialog.scenario_id = str(scenario.uuid)
+
+        report_running = partial(self.on_report_running, progress_dialog)
+        report_error = partial(self.on_report_error, progress_dialog)
+        report_finished = partial(self.on_report_finished, progress_dialog)
+
+        # Report manager
+        scenario_report_manager = report_manager
+
+        scenario_report_manager.generate_started.connect(report_running)
+        scenario_report_manager.generate_error.connect(report_error)
+        scenario_report_manager.generate_completed.connect(report_finished)
+
+        analysis_complete = partial(
+            self.analysis_complete,
+            self.current_analysis_task,
+            scenario_report_manager,
+            progress_dialog,
+        )
+
+        self.current_analysis_task.taskCompleted.connect(analysis_complete)
+
+        analysis_terminated = partial(self.task_terminated, self.current_analysis_task)
+        self.post_analysis(scenario_result, self.current_analysis_task, scenario_report_manager, progress_dialog)
         self.update_scenario_list()
 
     def has_trends_auth(self):

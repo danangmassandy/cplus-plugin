@@ -176,7 +176,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                 part_item = upload_part(url_item["url"], chunk, url_item["part_number"])
                 items.append(part_item)
                 self.uploaded_chunks += 1
-                self.__update_scenario_status(
+                self._update_scenario_status(
                     {
                         "progress_text": "Uploading layers with concurrent request",
                         "progress": int(
@@ -202,7 +202,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         :rtype: List
         """
 
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {
                 "progress_text": f"Uploading layers with concurrent request",
                 "progress": 0,
@@ -245,7 +245,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
 
         files_to_upload = {}
 
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {"progress_text": "Checking layers to be uploaded", "progress": 0}
         )
         masking_layers = self.get_masking_layers()
@@ -269,7 +269,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                 if priority_layer:
                     activity_pwl_uuids.add(priority_layer.get("uuid", ""))
 
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {
                     "progress_text": "Checking Activity layers to be uploaded",
                     "progress": (idx + 1 / check_counts) * 100,
@@ -300,7 +300,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             if sieve_mask_layer:
                 zip_path = self.__zip_shapefiles(sieve_mask_layer)
                 items_to_check[zip_path] = "sieve_mask_layer"
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
                     "progress": (3 / check_counts) * 100,
@@ -315,7 +315,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             if reference_layer:
                 zip_path = self.__zip_shapefiles(reference_layer)
                 items_to_check[zip_path] = "snap_layer"
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {
                 "progress_text": "Checking layers to be uploaded",
                 "progress": (4 / check_counts) * 100,
@@ -326,7 +326,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             zip_path = self.__zip_shapefiles(masking_layer)
             items_to_check[zip_path] = "mask_layer"
 
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {
                     "progress_text": "Checking layers to be uploaded",
                     "progress": (idx + 5 / check_counts) * 100,
@@ -348,7 +348,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         new_uploaded_layer = {}
 
         if len(files_to_upload) == 0:
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {"progress_text": "All layers have been uploaded", "progress": 100}
             )
         else:
@@ -363,7 +363,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                         res["path"] = file_path
                         new_uploaded_layer[file_path] = res
                         break
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {"progress_text": "All layers have been uploaded", "progress": 100}
             )
 
@@ -552,7 +552,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         Execute scenario analysis
         """
         # submit scenario detail to the API
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {"progress_text": "Submit and execute Scenario to CPLUS API", "progress": 0}
         )
         scenario_uuid = self.request.submit_scenario_detail(self.scenario_detail)
@@ -566,7 +566,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
 
         # fetch status by interval
         self.status_pooling = self.request.fetch_scenario_status(scenario_uuid)
-        self.status_pooling.on_response_fetched = self.__update_scenario_status
+        self.status_pooling.on_response_fetched = self._update_scenario_status
         status_response = self.status_pooling.results()
 
         if self.processing_cancelled:
@@ -582,7 +582,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             scenario_error = status_response.get("errors", "Unknown error")
             raise Exception(scenario_error)
 
-    def __update_scenario_status(self, response):
+    def _update_scenario_status(self, response):
         """
         Update processing status in QGIS modal.
         """
@@ -592,6 +592,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
             new_logs = response.get("logs")
             for log in new_logs:
                 if log not in self.logs:
+                    log = json.dumps(log)
                     self.log_message(log)
             self.logs = new_logs
 
@@ -614,7 +615,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         """
         super().download_file(url, local_filename)
         if not self.is_download_cancelled():
-            self.__update_scenario_status(
+            self._update_scenario_status(
                 {
                     "progress_text": "Downloading output files",
                     "progress": int(
@@ -629,11 +630,11 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         Set scenario output object based on scenario UUID
         to be used in generating report
         """
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {"progress_text": "Downloading output files", "progress": 0}
         )
         output_list = self.request.fetch_scenario_output_list(scenario_uuid)
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {"progress_text": "Downloading output files", "progress": 5}
         )
 
@@ -651,6 +652,6 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         self.output = scenario_result.analysis_output
         self.analysis_activities = self.scenario.activities
         self.analysis_weighted_activities = self.scenario.weighted_activities
-        self.__update_scenario_status(
+        self._update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )

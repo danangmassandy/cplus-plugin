@@ -4,6 +4,7 @@
 
 """
 import datetime
+import json
 import math
 import os
 import uuid
@@ -31,7 +32,7 @@ from .definitions.defaults import (
 from .models.base import ScenarioResult, SpatialExtent
 from .models.helpers import clone_activity
 from .resources import *
-from .utils import align_rasters, clean_filename, tr, log, FileUtils
+from .utils import align_rasters, clean_filename, tr, log, FileUtils, CustomJsonEncoder, todict
 
 
 class ScenarioAnalysisTask(QgsTask):
@@ -115,6 +116,11 @@ class ScenarioAnalysisTask(QgsTask):
         info: bool = True,
         notify: bool = True,
     ):
+        if not isinstance(message, str):
+            if isinstance(message, dict):
+                message = json.dumps(message, cls=CustomJsonEncoder)
+            else:
+                message = json.dumps(todict(message), cls=CustomJsonEncoder)
         log(message, name=name, info=info, notify=notify)
 
     def on_terminated(self):
