@@ -12,7 +12,7 @@ from qgis.core import QgsMapLayer, QgsRasterLayer, QgsVectorLayer
 
 from qgis.PyQt import QtCore, QtGui
 
-from ..models.base import (
+from cplus_core.models.base import (
     BaseModelComponent,
     BaseModelComponentType,
     Activity,
@@ -20,9 +20,8 @@ from ..models.base import (
     LayerType,
     NcsPathway,
 )
+from cplus_core.models.helpers import clone_activity, clone_ncs_pathway
 from ..models.helpers import (
-    clone_activity,
-    clone_ncs_pathway,
     copy_layer_component_attributes,
     create_ncs_pathway,
     ncs_pathway_to_dict,

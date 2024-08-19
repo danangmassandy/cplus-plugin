@@ -15,29 +15,9 @@ from .request import (
     CHUNK_SIZE,
 )
 from ..conf import settings_manager, Settings
-from ..models.base import Activity, NcsPathway
-from ..models.base import ScenarioResult
-from ..tasks import ScenarioAnalysisTask
+from cplus_core.models.base import Activity, NcsPathway, ScenarioResult
+from cplus_core.analysis import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
-
-
-def clean_filename(filename):
-    """Creates a safe filename by removing operating system
-    invalid filename characters.
-
-    :param filename: File name
-    :type filename: str
-
-    :returns A clean file name
-    :rtype str
-    """
-    characters = " %:/,\[]<>*?"
-
-    for character in characters:
-        if character in filename:
-            filename = filename.replace(character, "_")
-
-    return filename
 
 
 class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):

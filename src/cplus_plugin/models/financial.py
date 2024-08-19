@@ -3,10 +3,9 @@
 """ Data models for the financial elements of the tool."""
 
 import dataclasses
-from enum import IntEnum
 import typing
 
-from .base import Activity
+from cplus_core.models.base import Activity
 
 
 @dataclasses.dataclass

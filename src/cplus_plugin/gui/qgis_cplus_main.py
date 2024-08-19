@@ -63,7 +63,7 @@ from .priority_group_dialog import PriorityGroupDialog
 
 from .scenario_dialog import ScenarioDialog
 
-from ..models.base import (
+from cplus_core.models.base import (
     PriorityLayerType,
 )
 from ..models.financial import ActivityNpv
@@ -91,8 +91,13 @@ from ..definitions.defaults import (
 )
 from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager, ReportManager
-from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
-from ..tasks import ScenarioAnalysisTask
+from cplus_core.models.base import (
+    Scenario,
+    ScenarioResult,
+    ScenarioState,
+    SpatialExtent,
+)
+from cplus_core.analysis import ScenarioAnalysisTask
 from ..utils import open_documentation, tr, log, FileUtils, write_to_file
 
 

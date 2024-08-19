@@ -12,8 +12,8 @@ from qgis.core import (
 
 from qgis.PyQt import QtCore, sip
 
-from ...models.base import ModelComponentType, NcsPathway
-from ...models.helpers import clone_ncs_pathway
+from cplus_core.models.base import ModelComponentType, NcsPathway
+from cplus_core.models.helpers import clone_ncs_pathway
 from ...models.validation import SubmitResult, ValidationResult
 from .validators import NcsDataValidator
 
