@@ -1527,14 +1527,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario_report_manager.generate_error.connect(report_error)
         scenario_report_manager.generate_completed.connect(report_finished)
 
-        analysis_complete = partial(
-            self.analysis_complete,
-            self.current_analysis_task,
-            scenario_report_manager,
-            progress_dialog,
-        )
-
-        self.current_analysis_task.taskCompleted.connect(analysis_complete)
+        self.current_analysis_task.scenario = scenario
 
         # self.post_analysis(scenario_result, self.current_analysis_task, scenario_report_manager, progress_dialog)
         self.post_analysis(scenario_result, None, scenario_report_manager, progress_dialog)

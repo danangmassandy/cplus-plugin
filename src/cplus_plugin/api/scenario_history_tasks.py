@@ -47,6 +47,7 @@ class FetchScenarioHistoryTask(BaseScenarioTask):
         """
         try:
             self.result = self.fetch_scenario_history()
+            log(json.dumps(todict(self.result), cls=CustomJsonEncoder))
             return True
         except Exception as ex:
             log(f"Error during fetch scenario history: {ex}", info=False)
