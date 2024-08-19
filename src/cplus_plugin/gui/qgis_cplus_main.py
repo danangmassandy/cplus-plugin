@@ -1261,7 +1261,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         scenario.weighted_activities = all_activities
 
-        log(json.dumps(todict(scenario), cls=CustomJsonEncoder))
         # return
         if scenario_result:
             scenario_result.scenario = scenario

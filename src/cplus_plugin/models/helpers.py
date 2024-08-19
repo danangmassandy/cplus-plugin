@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """Helper functions for supporting model management."""
-
+import json
 from dataclasses import field, fields
 import typing
 import uuid
@@ -440,6 +440,13 @@ def extent_to_project_crs_extent(
         # No need for transformation
         return input_rect
 
+
+    from ..utils import todict, CustomJsonEncoder
+    log(json.dumps(todict(project), cls=CustomJsonEncoder))
+    log(json.dumps(todict(default_crs), cls=CustomJsonEncoder))
+    log(json.dumps(todict(project.crs()), cls=CustomJsonEncoder))
+    log(json.dumps(todict(input_rect), cls=CustomJsonEncoder))
+    log(json.dumps(todict(spatial_extent), cls=CustomJsonEncoder))
     try:
         coordinate_xform = QgsCoordinateTransform(default_crs, project.crs(), project)
         return coordinate_xform.transformBoundingBox(input_rect)
