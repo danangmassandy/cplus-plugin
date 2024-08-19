@@ -18,6 +18,7 @@ from ..models.base import Scenario, ScenarioResult, NcsPathway, Activity
 from ..conf import settings_manager, Settings
 from ..utils import log, todict, CustomJsonEncoder
 from .request import CplusApiRequest
+from ..tasks import ScenarioAnalysisTask
 
 
 class BaseScenarioTask(QgsTask):
@@ -281,38 +282,10 @@ class BaseFetchScenarioOutput:
         return scenario, scenario_result
 
 
-# from .scenario_task_api_client import ScenarioAnalysisTaskApiClient
-
 class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
     """Fetch scenario output from API."""
 
     task_finished = QtCore.pyqtSignal(object, object)
-
-    # def __init__(
-    #     self,
-    #     analysis_scenario_name,
-    #     analysis_scenario_description,
-    #     analysis_activities,
-    #     analysis_priority_layers_groups,
-    #     analysis_extent,
-    #     scenario,
-    #     scenario_directory,
-    # ):
-    #     super().__init__(
-    #         analysis_scenario_name,
-    #         analysis_scenario_description,
-    #         analysis_activities,
-    #         analysis_priority_layers_groups,
-    #         analysis_extent,
-    #         scenario,
-    #     )
-    #     self.status_pooling = None
-    #     self.logs = []
-    #     self.total_file_output = 0
-    #     self.downloaded_output = 0
-    #     self.scenario_status = None
-    #     self.scenario_directory = scenario_directory
-    #     self.scenario_api_uuid = scenario.uuid
 
     def __init__(self, scenario: Scenario):
         """Task initialization.
@@ -401,9 +374,7 @@ class FetchScenarioOutputTask(BaseScenarioTask, BaseFetchScenarioOutput):
                 )
         elif not self.processing_cancelled:
             log("Failed download scenario outputs!", info=False)
-        log('finished')
-        # log(json.dumps(todict(self.scenario_result), cls=CustomJsonEncoder))
-        # self.task_finished.emit(self.scenario, self.scenario_result)
+        self.task_finished.emit(self.scenario, self.scenario_result)
 
     def fetch_scenario_detail(self):
         """Fetch scenario detail from API.
@@ -446,3 +417,111 @@ class DeleteScenarioTask(BaseScenarioTask):
         :type is_success: bool
         """
         self.task_finished.emit(is_success)
+
+class FetchScenarioOutputTask2(BaseScenarioTask, BaseFetchScenarioOutput, ScenarioAnalysisTask):
+    """Fetch scenario output from API."""
+
+    task_finished = QtCore.pyqtSignal(object, object)
+
+    status_message_changed = QtCore.pyqtSignal(str)
+    info_message_changed = QtCore.pyqtSignal(str, int)
+
+    custom_progress_changed = QtCore.pyqtSignal(float)
+
+    def __init__(
+        self,
+        analysis_scenario_name,
+        analysis_scenario_description,
+        analysis_activities,
+        analysis_priority_layers_groups,
+        analysis_extent,
+        scenario,
+        scenario_directory,
+    ):
+        BaseScenarioTask.__init__(self)
+        BaseFetchScenarioOutput.__init__(self)
+        ScenarioAnalysisTask.__init__(
+            self,
+            analysis_scenario_name,
+            analysis_scenario_description,
+            analysis_activities,
+            analysis_priority_layers_groups,
+            analysis_extent,
+            scenario,
+        )
+        self.status_pooling = None
+        self.logs = []
+        self.total_file_output = 0
+        self.downloaded_output = 0
+        self.scenario_status = None
+        self.scenario_directory = scenario_directory
+        self.scenario_api_uuid = scenario.uuid
+        self.scenario = scenario
+
+        self.scenario_directory = None
+        self.processing_cancelled = False
+        self.scenario_result = None
+        self.output_list = None
+        self.created_datetime
+
+    def _update_scenario_status(self, response):
+        """
+        Update processing status in QGIS modal.
+        """
+        self.set_status_message(response.get("progress_text", ""))
+        self.update_progress(response.get("progress", 0))
+        if "logs" in response:
+            new_logs = response.get("logs")
+            for log in new_logs:
+                if log not in self.logs:
+                    log = json.dumps(log)
+                    self.log_message(log)
+            self.logs = new_logs
+
+    def run(self):
+        """Execute the task logic.
+
+        :return: True if task runs successfully
+        :rtype: bool
+        """
+        self.request = CplusApiRequest()
+        self.log_message("RETRIEVE")
+        try:
+            # self.new_scenario_detail = self.request.fetch_scenario_detail(
+            #     self.scenario_api_uuid
+            # )
+            self.new_scenario_detail = self.fetch_scenario_detail()
+            self.created_datetime = datetime.datetime.strptime(
+                self.new_scenario_detail["submitted_on"], "%Y-%m-%dT%H:%M:%SZ"
+            )
+            self.scenario_directory = self.get_scenario_directory()
+            if os.path.exists(self.scenario_directory):
+                for file in os.listdir(self.scenario_directory):
+                    if file != 'processing.log':
+                        path = os.path.join(self.scenario_directory, file)
+                        if os.path.isdir(path):
+                            shutil.rmtree(os.path.join(self.scenario_directory, file))
+                        else:
+                            os.remove(path)
+
+            self._retrieve_scenario_outputs(self.scenario_api_uuid)
+            return True
+        except Exception as ex:
+            log(f"Error during fetch scenario output list: {ex}", info=False)
+            return False
+
+    def finished(self, is_success):
+        """Handler when task has been executed.
+
+        :param is_success: True if task runs successfully.
+        :type is_success: bool
+        """
+        if is_success:
+            settings_manager.save_scenario(self.scenario)
+            if self.scenario_result:
+                settings_manager.save_scenario_result(
+                    self.scenario_result, str(self.scenario.uuid)
+                )
+        elif not self.processing_cancelled:
+            log("Failed download scenario outputs!", info=False)
+        log('finished')

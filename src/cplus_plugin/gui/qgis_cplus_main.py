@@ -260,7 +260,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # task don't save the log message.
 
             # commenting this for now
-            write_to_file(str(not self.current_analysis_task), '/home/zamuzakki/cplus.txt')
             if not self.current_analysis_task:
                 return
 
@@ -286,13 +285,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             log_text_cursor.movePosition(QtGui.QTextCursor.End)
             self.log_text_box.setTextCursor(log_text_cursor)
             try:
+                os.makedirs(self.current_analysis_task.scenario_directory, exist_ok=True)
                 processing_log_file = os.path.join(
                     self.current_analysis_task.scenario_directory,
                     SCENARIO_LOG_FILE_NAME,
                 )
                 write_to_file(message, processing_log_file)
             except TypeError as e:
-                write_to_file(str(e), '/home/zamuzakki/cplus.txt')
                 pass
 
     def prepare_input(self):
@@ -1262,32 +1261,29 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         scenario.weighted_activities = all_activities
 
-        log(f"scenario and scenario.server_uuid: {scenario and scenario.server_uuid}")
         log(json.dumps(todict(scenario), cls=CustomJsonEncoder))
-        return
+        # return
         if scenario_result:
             scenario_result.scenario = scenario
         elif scenario and scenario.server_uuid:
+            # from ..api.scenario_history_tasks import TestTask
+            # log(json.dumps(todict(scenario), cls=CustomJsonEncoder))
+            # # return
             # self.analysis_scenario_name = scenario.name
             # self.analysis_scenario_description = scenario.description
             # self.analysis_extent = SpatialExtent(
             #     bbox=extent_list
             # )
-            # self.analysis_activities = [
-            #     Activity.from_dict(activity)
-            #     for activity in online_task["task"]["analysis_activities"]
-            # ]
-            # self.analysis_priority_layers_groups = online_task["task"][
-            #     "analysis_priority_layers_groups"
-            # ]
+            # self.analysis_activities = scenario.activities
+            # self.analysis_priority_layers_groups = scenario.priority_layer_groups
             #
-            # scenario = Scenario(
-            #     uuid=online_task["uuid"],
+            # scenario_obj = Scenario(
+            #     uuid=scenario.uuid,
             #     name=self.analysis_scenario_name,
             #     description=self.analysis_scenario_description,
             #     extent=self.analysis_extent,
             #     activities=self.analysis_activities,
-            #     weighted_activities=[],
+            #     weighted_activities=scenario.weighted_activities,
             #     priority_layer_groups=self.analysis_priority_layers_groups,
             # )
             #
@@ -1305,30 +1301,48 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             # )
             # progress_dialog.run_dialog()
             #
-            # analysis_task = ScenarioTaskOutputDownload(
+            # analysis_task = TestTask(
             #     self.analysis_scenario_name,
             #     self.analysis_scenario_description,
             #     self.analysis_activities,
             #     self.analysis_priority_layers_groups,
             #     self.analysis_extent,
-            #     scenario,
-            #     online_task["directory"],
+            #     scenario_obj,
+            #     None,
             # )
-            # analysis_task.scenario_api_uuid = online_task["online_uuid"]
+            # analysis_task.scenario_api_uuid = scenario.server_uuid
             #
             # self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
 
 
             # needs to load the output from server
+            self.analysis_scenario_name = scenario.name
+            self.analysis_scenario_description = scenario.description
+            self.analysis_extent = SpatialExtent(
+                bbox=extent_list
+            )
+            self.analysis_activities = scenario.activities
+            self.analysis_priority_layers_groups = scenario.priority_layer_groups
+
+            scenario_obj = Scenario(
+                uuid=scenario.uuid,
+                name=self.analysis_scenario_name,
+                description=self.analysis_scenario_description,
+                extent=self.analysis_extent,
+                activities=self.analysis_activities,
+                weighted_activities=scenario.weighted_activities,
+                priority_layer_groups=self.analysis_priority_layers_groups,
+            )
+
             task = FetchScenarioOutputTask(scenario)
 
             analysis_task = ScenarioAnalysisTaskApiClient(
-                analysis_scenario_name=scenario.name,
-                analysis_scenario_description=scenario.description,
-                analysis_activities=scenario.activities,
-                analysis_priority_layers_groups=scenario.priority_layer_groups,
-                analysis_extent=scenario.extent,
-                scenario=scenario,
+                analysis_scenario_name=self.analysis_scenario_name,
+                analysis_scenario_description=self.analysis_scenario_description,
+                analysis_activities=self.analysis_activities,
+                analysis_priority_layers_groups=self.analysis_priority_layers_groups,
+                analysis_extent=self.analysis_extent,
+                scenario=scenario_obj,
                 extent_box=scenario.extent,
             )
             scenario_data = task.fetch_scenario_detail()
@@ -1490,6 +1504,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         :param scenario_result: Scenario result from API
         :type scenario_result: ScenarioResult
         """
+
         self.scenario_result = scenario_result
         progress_dialog = ProgressDialog(
             minimum=0,
@@ -1521,7 +1536,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         self.current_analysis_task.taskCompleted.connect(analysis_complete)
 
-        analysis_terminated = partial(self.task_terminated, self.current_analysis_task)
         # self.post_analysis(scenario_result, self.current_analysis_task, scenario_report_manager, progress_dialog)
         self.post_analysis(scenario_result, None, scenario_report_manager, progress_dialog)
         self.update_scenario_list()
