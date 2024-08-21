@@ -16,7 +16,7 @@ from .request import (
 from ..conf import settings_manager, Settings
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
-from ..api.scenario_history_tasks import BaseFetchScenarioOutput
+from ..api.base import BaseFetchScenarioOutput
 
 
 def clean_filename(filename):
