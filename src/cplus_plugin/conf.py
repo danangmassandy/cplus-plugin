@@ -104,6 +104,8 @@ class ScenarioSettings(Scenario):
                 saved_activity = settings_manager.get_activity(
                     setting_activity.get("uuid")
                 )
+                if saved_activity is None:
+                    continue
 
                 for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
                     for path_uuid, path in pathways.items():
@@ -112,9 +114,8 @@ class ScenarioSettings(Scenario):
                             pathway.path = path
                             saved_activity.add_ncs_pathway(pathway)
 
-                if saved_activity:
-                    saved_activity.path = setting_activity.get("path")
-                    activities.append(saved_activity)
+                saved_activity.path = setting_activity.get("path")
+                activities.append(saved_activity)
 
             for activity in weighted_activities_list:
                 setting_activity = json.loads(activity)
@@ -122,6 +123,8 @@ class ScenarioSettings(Scenario):
                 saved_activity = settings_manager.get_activity(
                     setting_activity.get("uuid")
                 )
+                if saved_activity is None:
+                    continue
 
                 for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
                     for path_uuid, path in pathways.items():
@@ -130,13 +133,9 @@ class ScenarioSettings(Scenario):
                             pathway.path = path
                             saved_activity.add_ncs_pathway(pathway)
 
-                if saved_activity:
-                    saved_activity.path = setting_activity.get("path")
-                    weighted_activities.append(saved_activity)
+                saved_activity.path = setting_activity.get("path")
+                weighted_activities.append(saved_activity)
         except Exception as e:
-            import traceback
-
-            log(traceback.format_exc())
             log(f"Problem fetching saved activities, {e}")
 
         return cls(

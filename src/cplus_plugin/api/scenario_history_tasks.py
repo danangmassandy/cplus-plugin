@@ -57,16 +57,12 @@ class FetchScenarioHistoryTask(BaseScenarioTask):
         :param result: Scenario history list from API
         :type result: List[Scenario]
         """
-        log("store_scenario_list")
-        from ..utils import todict, CustomJsonEncoder
-
         scenarios: List[Scenario] = settings_manager.get_scenarios()
         existing_scenarios = [s for s in scenarios if s.server_uuid is not None]
         for scenario in result:
             exist = [
                 s for s in existing_scenarios if s.server_uuid == scenario.server_uuid
             ]
-            # log(f"scenario: {json.dumps(todict(scenario), cls=CustomJsonEncoder)}")
             if len(exist) > 0:
                 continue
             settings_manager.save_scenario(scenario)
