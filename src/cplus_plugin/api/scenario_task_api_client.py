@@ -68,6 +68,16 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.total_file_output = 0
         self.downloaded_output = 0
         self.scenario_status = None
+        self.__post_init()
+
+    def __post_init(self):
+        # reload analysis_activities to fix the pwl
+        activities = []
+        for activity in self.analysis_activities:
+            settings_activity = self.get_activity(str(activity.uuid))
+            activities.append(settings_activity)
+        self.analysis_activities = activities
+        self.scenario.activities = activities
 
     def cancel_task(self, exception=None):
         """
@@ -478,35 +488,45 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             activity["layer_type"] = 0
             activity["path"] = ""
             for pathway in activity["pathways"]:
-                if pathway:
-                    if pathway["path"] and os.path.exists(pathway["path"]):
-                        if self.path_to_layer_mapping.get(pathway["path"], None):
-                            pathway["uuid"] = self.path_to_layer_mapping.get(
-                                pathway["path"]
-                            )["uuid"]
-                            pathway["layer_uuid"] = pathway["uuid"]
-                            pathway["layer_type"] = 0
+                if pathway is None:
+                    continue
+                path = pathway["path"]
+                if path.startswith("cplus://"):
+                    pathway["layer_uuid"] = path.replace("cplus://", "")
+                    pathway["layer_type"] = 0
+                elif path and os.path.exists(path):
+                    if self.path_to_layer_mapping.get(path, None):
+                        pathway["uuid"] = self.path_to_layer_mapping.get(path)["uuid"]
+                        pathway["layer_uuid"] = pathway["uuid"]
+                        pathway["layer_type"] = 0
 
-                    carbon_uuids = []
-                    for carbon_path in pathway["carbon_paths"]:
-                        if os.path.exists(carbon_path):
-                            if self.path_to_layer_mapping.get(carbon_path, None):
-                                carbon_uuids.append(
-                                    self.path_to_layer_mapping.get(carbon_path)["uuid"]
-                                )
-                    pathway["carbon_paths"] = []
-                    pathway["carbon_uuids"] = carbon_uuids
-                    pathway["path"] = ""
+                carbon_uuids = []
+                for carbon_path in pathway["carbon_paths"]:
+                    if carbon_path.startswith("cplus://"):
+                        names = carbon_path.split("/")
+                        carbon_uuids.append(names[-2])
+                    elif os.path.exists(carbon_path):
+                        if self.path_to_layer_mapping.get(carbon_path, None):
+                            carbon_uuids.append(
+                                self.path_to_layer_mapping.get(carbon_path)["uuid"]
+                            )
+                pathway["carbon_paths"] = []
+                pathway["carbon_uuids"] = carbon_uuids
+                pathway["path"] = ""
             new_priority_layers = []
             for priority_layer in activity["priority_layers"]:
-                if priority_layer:
-                    priority_layer["path"] = ""
-                    new_priority_layers.append(priority_layer)
+                if priority_layer is None:
+                    continue
+                priority_layer["path"] = ""
+                new_priority_layers.append(priority_layer)
             activity["priority_layers"] = new_priority_layers
 
         priority_layers = self.get_priority_layers()
         for priority_layer in priority_layers:
-            if priority_layer.get("path", "") in self.path_to_layer_mapping:
+            path = priority_layer.get("path", "")
+            if path.startswith("cplus://"):
+                priority_layer["layer_uuid"] = path.replace("cplus://", "")
+            elif path in self.path_to_layer_mapping:
                 priority_layer["layer_uuid"] = self.path_to_layer_mapping[
                     priority_layer.get("path", "")
                 ]["uuid"]
@@ -590,7 +610,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             new_logs = response.get("logs")
             for log in new_logs:
                 if log not in self.logs:
-                    self.log_message(log)
+                    self.log_message(log["log"])
             self.logs = new_logs
 
     def __create_activity(self, activity: dict, download_dict: list):
