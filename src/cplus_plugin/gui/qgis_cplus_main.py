@@ -101,7 +101,15 @@ from ..lib.extent_check import extent_within_pilot
 from ..lib.reports.manager import report_manager, ReportManager
 from ..models.base import Scenario, ScenarioResult, ScenarioState, SpatialExtent
 from ..tasks import ScenarioAnalysisTask
-from ..utils import open_documentation, tr, log, FileUtils, write_to_file, todict, CustomJsonEncoder
+from ..utils import (
+    open_documentation,
+    tr,
+    log,
+    FileUtils,
+    write_to_file,
+    todict,
+    CustomJsonEncoder,
+)
 
 
 WidgetUi, _ = loadUiType(
@@ -266,11 +274,13 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             try:
                 to_zone = tz.tzlocal()
                 message_dict = json.loads(message)
-                if sorted(list(message_dict.keys())) == ['date_time', 'log']:
-                    message = message_dict['log']
-                    message_time = message_dict['date_time'].replace("Z", "+00:00")
+                if sorted(list(message_dict.keys())) == ["date_time", "log"]:
+                    message = message_dict["log"]
+                    message_time = message_dict["date_time"].replace("Z", "+00:00")
                     message_time = datetime.datetime.fromisoformat(message_time)
-                    message_time = message_time.astimezone(to_zone).strftime("%Y-%m-%dT%H:%M:%S")
+                    message_time = message_time.astimezone(to_zone).strftime(
+                        "%Y-%m-%dT%H:%M:%S"
+                    )
                 else:
                     message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             except Exception:
@@ -285,13 +295,15 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             log_text_cursor.movePosition(QtGui.QTextCursor.End)
             self.log_text_box.setTextCursor(log_text_cursor)
             try:
-                os.makedirs(self.current_analysis_task.scenario_directory, exist_ok=True)
+                os.makedirs(
+                    self.current_analysis_task.scenario_directory, exist_ok=True
+                )
                 processing_log_file = os.path.join(
                     self.current_analysis_task.scenario_directory,
                     SCENARIO_LOG_FILE_NAME,
                 )
                 write_to_file(message, processing_log_file)
-            except TypeError as e:
+            except TypeError:
                 pass
 
     def prepare_input(self):
@@ -1128,17 +1140,16 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         scenario history list
         """
         scenarios = settings_manager.get_scenarios()
-
         if len(scenarios) >= 0:
             self.scenario_list.clear()
 
         for scenario in scenarios:
-            type = "Available offline"
+            scenario_type = "Available offline"
             if scenario.server_uuid:
                 scenario_result = settings_manager.get_scenario_result(scenario.uuid)
                 if scenario_result is None:
-                    type = "Online"
-            item_widget = ScenarioItemWidget(scenario.name, type)
+                    scenario_type = "Online"
+            item_widget = ScenarioItemWidget(scenario.name, scenario_type)
             item = QtWidgets.QListWidgetItem(self.scenario_list)
             item.setSizeHint(item_widget.sizeHint())
             item.setData(QtCore.Qt.UserRole, str(scenario.uuid))
@@ -1199,13 +1210,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
     def load_scenario(self):
         """Edits the current selected scenario
         and updates the layer box list."""
-        from ..api.request import (
-            CplusApiRequest,
-            JOB_COMPLETED_STATUS,
-            JOB_STOPPED_STATUS,
-            CHUNK_SIZE,
-        )
-
         if self.scenario_list.currentItem() is None:
             self.show_message(
                 tr("Select first the scenario from the scenario list."),
@@ -1261,15 +1265,12 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
         scenario.weighted_activities = all_activities
 
-        # return
         if scenario_result:
             scenario_result.scenario = scenario
         elif scenario and scenario.server_uuid:
             self.analysis_scenario_name = scenario.name
             self.analysis_scenario_description = scenario.description
-            self.analysis_extent = SpatialExtent(
-                bbox=extent_list
-            )
+            self.analysis_extent = SpatialExtent(bbox=extent_list)
             self.analysis_activities = scenario.activities
             self.analysis_priority_layers_groups = scenario.priority_layer_groups
 
@@ -1298,7 +1299,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             )
             progress_dialog.run_dialog()
 
-            analysis_task = FetchScenarioOutputTask2(
+            analysis_task = FetchScenarioOutputTask(
                 self.analysis_scenario_name,
                 self.analysis_scenario_description,
                 self.analysis_activities,
@@ -1308,9 +1309,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 None,
             )
             analysis_task.scenario_api_uuid = scenario.server_uuid
+            analysis_task.task_finished.connect(self.update_scenario_list)
 
             self.run_cplus_main_task(progress_dialog, scenario, analysis_task)
-            self.update_scenario_list()
 
     def show_scenario_info(self):
         """Loads dialog for showing scenario information."""
@@ -1447,41 +1448,6 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         """
         if not success:
             return
-        self.update_scenario_list()
-
-    def on_fetch_scenario_output_finished(self, scenario, scenario_result):
-        """Callback when plugin has finished downloading scenario output.
-
-        :param scenario_result: Scenario result from API
-        :type scenario_result: ScenarioResult
-        """
-
-        self.scenario_result = scenario_result
-        progress_dialog = ProgressDialog(
-            minimum=0,
-            maximum=100,
-            main_widget=self,
-            scenario_id=str(scenario.uuid),
-            scenario_name=self.analysis_scenario_name,
-        )
-        progress_dialog.analysis_task = self.current_analysis_task
-        progress_dialog.scenario_id = str(scenario.uuid)
-
-        report_running = partial(self.on_report_running, progress_dialog)
-        report_error = partial(self.on_report_error, progress_dialog)
-        report_finished = partial(self.on_report_finished, progress_dialog)
-
-        # Report manager
-        scenario_report_manager = report_manager
-
-        scenario_report_manager.generate_started.connect(report_running)
-        scenario_report_manager.generate_error.connect(report_error)
-        scenario_report_manager.generate_completed.connect(report_finished)
-
-        self.current_analysis_task.scenario = scenario
-
-        # self.post_analysis(scenario_result, self.current_analysis_task, scenario_report_manager, progress_dialog)
-        self.post_analysis(scenario_result, None, scenario_report_manager, progress_dialog)
         self.update_scenario_list()
 
     def has_trends_auth(self):

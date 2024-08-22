@@ -328,10 +328,10 @@ class CplusApiRequest:
         for item in result["results"]:
             detail = item["detail"]
             extent = []
-            if "extent" in detail:
-                extent = detail.get("extent", [])
-            else:
+            if "extent_project" in detail:
                 extent = detail.get("extent_project", [])
+            else:
+                extent = detail.get("extent", [])
             scenario_results.append(
                 Scenario(
                     uuid=uuid.uuid4(),

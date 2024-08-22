@@ -104,15 +104,17 @@ class ScenarioSettings(Scenario):
                 saved_activity = settings_manager.get_activity(
                     setting_activity.get("uuid")
                 )
-                saved_activity.path = setting_activity.get("path")
 
                 for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
                     for path_uuid, path in pathways.items():
                         pathway = settings_manager.get_ncs_pathway(path_uuid)
-                        pathway.path = path
-                        saved_activity.add_ncs_pathway(pathway)
+                        if pathway:
+                            pathway.path = path
+                            saved_activity.add_ncs_pathway(pathway)
 
-                activities.append(saved_activity)
+                if saved_activity:
+                    saved_activity.path = setting_activity.get("path")
+                    activities.append(saved_activity)
 
             for activity in weighted_activities_list:
                 setting_activity = json.loads(activity)
@@ -120,16 +122,21 @@ class ScenarioSettings(Scenario):
                 saved_activity = settings_manager.get_activity(
                     setting_activity.get("uuid")
                 )
-                saved_activity.path = setting_activity.get("path")
 
                 for pathways in setting_activity[PATHWAYS_ATTRIBUTE]:
                     for path_uuid, path in pathways.items():
                         pathway = settings_manager.get_ncs_pathway(path_uuid)
-                        pathway.path = path
-                        saved_activity.add_ncs_pathway(pathway)
+                        if pathway:
+                            pathway.path = path
+                            saved_activity.add_ncs_pathway(pathway)
 
-                weighted_activities.append(saved_activity)
+                if saved_activity:
+                    saved_activity.path = setting_activity.get("path")
+                    weighted_activities.append(saved_activity)
         except Exception as e:
+            import traceback
+
+            log(traceback.format_exc())
             log(f"Problem fetching saved activities, {e}")
 
         return cls(
@@ -360,7 +367,6 @@ class SettingsManager(QtCore.QObject):
         :type scenario_settings: ScenarioSettings
         """
         settings_key = self._get_scenario_settings_base(scenario_settings.uuid)
-
         self.save_scenario_extent(settings_key, scenario_settings.extent)
 
         activities = []

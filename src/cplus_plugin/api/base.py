@@ -126,6 +126,9 @@ class BaseFetchScenarioOutput:
         for activity in scenario_detail["weighted_activities"]:
             weighted_activities.append(self.__create_activity(activity, download_dict))
 
+        # from ..utils import log, todict, CustomJsonEncoder
+        # log(f"Extent: {json.dumps(todict(original_scenario.extent), cls=CustomJsonEncoder)}")
+        # log(f"scenario_detail: {json.dumps(todict(scenario_detail), cls=CustomJsonEncoder)}")
         scenario = Scenario(
             uuid=original_scenario.uuid,
             name=original_scenario.name,

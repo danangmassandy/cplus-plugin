@@ -338,8 +338,8 @@ class Activity(LayerModelComponent):
         """Create an Activity object from Activity dict."""
         pathways = []
         for pathway in activity_dict["pathways"]:
-            del pathway['layer_uuid']
-            del pathway['carbon_uuids']
+            del pathway["layer_uuid"]
+            del pathway["carbon_uuids"]
             pathways.append(NcsPathway(**pathway))
         activity_dict["pathways"] = pathways
         return Activity(**activity_dict)

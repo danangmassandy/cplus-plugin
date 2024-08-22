@@ -235,9 +235,9 @@ def layer_component_to_dict(
     try:
         base_attrs[LAYER_TYPE_ATTRIBUTE] = int(layer_component.layer_type)
     except TypeError:
-        if base_attrs['path'].endswith('.tif'):
+        if base_attrs["path"].endswith(".tif"):
             base_attrs[LAYER_TYPE_ATTRIBUTE] = 0
-        elif base_attrs['path'].endswith('.shp'):
+        elif base_attrs["path"].endswith(".shp"):
             base_attrs[LAYER_TYPE_ATTRIBUTE] = 1
     base_attrs[USER_DEFINED_ATTRIBUTE] = layer_component.user_defined
 
@@ -440,13 +440,6 @@ def extent_to_project_crs_extent(
         # No need for transformation
         return input_rect
 
-
-    from ..utils import todict, CustomJsonEncoder
-    log(json.dumps(todict(project), cls=CustomJsonEncoder))
-    log(json.dumps(todict(default_crs), cls=CustomJsonEncoder))
-    log(json.dumps(todict(project.crs()), cls=CustomJsonEncoder))
-    log(json.dumps(todict(input_rect), cls=CustomJsonEncoder))
-    log(json.dumps(todict(spatial_extent), cls=CustomJsonEncoder))
     try:
         coordinate_xform = QgsCoordinateTransform(default_crs, project.crs(), project)
         return coordinate_xform.transformBoundingBox(input_rect)

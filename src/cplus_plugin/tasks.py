@@ -32,7 +32,15 @@ from .definitions.defaults import (
 from .models.base import ScenarioResult, SpatialExtent
 from .models.helpers import clone_activity
 from .resources import *
-from .utils import align_rasters, clean_filename, tr, log, FileUtils, CustomJsonEncoder, todict
+from .utils import (
+    align_rasters,
+    clean_filename,
+    tr,
+    log,
+    FileUtils,
+    CustomJsonEncoder,
+    todict,
+)
 
 
 class ScenarioAnalysisTask(QgsTask):
