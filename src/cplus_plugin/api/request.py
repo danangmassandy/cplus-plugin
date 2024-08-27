@@ -306,6 +306,12 @@ class CplusApiRequest:
         return result
 
     def fetch_default_layer_list(self) -> dict:
+        """Fetch available default layers from Server.
+
+        :raises CplusApiRequestError: when response code is non-2xx
+        :return: Layer List
+        :rtype: dict
+        """
         response = self.get(self.urls.layer_default_list())
         result = response.json()
         if response.status_code != 200:

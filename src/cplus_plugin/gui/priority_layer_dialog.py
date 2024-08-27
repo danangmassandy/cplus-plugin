@@ -277,6 +277,7 @@ class PriorityLayerDialog(QtWidgets.QDialog, DialogUi):
         return layer[0] if layer else {}
 
     def _on_default_layer_selection_changed(self):
+        """Event raised when default layer selection is changed."""
         layer = self._get_selected_default_layer()
         metadata = layer.get("metadata", {})
         self.layer_name.setText(metadata.get("name", layer["name"]))

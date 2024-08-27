@@ -136,7 +136,6 @@ class LayerModelComponent(BaseModelComponent):
     path: str = ""
     layer_type: LayerType = LayerType.UNDEFINED
     user_defined: bool = False
-    # layer_uuid: UUID = None
 
     def __post_init__(self):
         """Try to set the layer and layer type properties."""
@@ -146,6 +145,12 @@ class LayerModelComponent(BaseModelComponent):
 
     @property
     def layer_uuid(self):
+        """Return Layer UUID for default layer.
+
+        Default layer's path will start with 'cplus://'.
+        :return: Server Layer UUID
+        :rtype: str
+        """
         if self.path.startswith("cplus://"):
             return self.path.replace("cplus://", "")
         return None
@@ -242,10 +247,15 @@ class PriorityLayer(BaseModelComponent):
     selected: bool = False
     path: str = ""
     type: PriorityLayerType = PriorityLayerType.DEFAULT
-    # layer_uuid: UUID = None
 
     @property
     def layer_uuid(self):
+        """Return Layer UUID for default layer.
+
+        Default layer's path will start with 'cplus://'.
+        :return: Server Layer UUID
+        :rtype: str
+        """
         if self.path.startswith("cplus://"):
             return self.path.replace("cplus://", "")
         return None

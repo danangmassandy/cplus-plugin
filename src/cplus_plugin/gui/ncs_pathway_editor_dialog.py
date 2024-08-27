@@ -443,6 +443,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         settings_manager.set_value(Settings.LAST_DATA_DIR, os.path.dirname(layer_path))
 
     def _on_default_layer_selection_changed(self):
+        """Event raised when default layer selection is changed."""
         layer = self._get_selected_default_layer()
         metadata = layer.get("metadata", {})
         self.txt_name.setText(metadata.get("name", layer["name"]))
@@ -451,7 +452,7 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
         self.cbo_layer.setAdditionalItems([])
 
     def _on_default_carbon_layer_selected(self, item):
+        """Event raised when default carbon layer is selected."""
         layer_name = item["name"]
-        log(f"Selected item: {layer_name}")
         layer_path = "cplus://" + item["layer_uuid"] + "/" + layer_name
         self._carbon_model.add_carbon_layer(layer_path)

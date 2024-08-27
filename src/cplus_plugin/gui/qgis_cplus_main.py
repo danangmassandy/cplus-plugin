@@ -475,7 +475,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
             item.setData(QtCore.Qt.DisplayRole, layer.get("name"))
             item.setData(QtCore.Qt.UserRole, layer.get("uuid"))
 
-            if not os.path.exists(layer.get("path")):
+            if not os.path.exists(layer.get("path")) and not layer.get(
+                "path"
+            ).startswith("cplus://"):
                 item.setIcon(FileUtils.get_icon("mIndicatorLayerError.svg"))
                 item.setToolTip(
                     tr(
