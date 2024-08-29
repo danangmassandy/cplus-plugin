@@ -76,7 +76,8 @@ class NcsPathwayEditorDialog(QtWidgets.QDialog, WidgetUi):
             self._on_default_layer_selection_changed
         )
 
-        self.btn_add_default_carbon.setIcon(add_icon)
+        add_default_icon = FileUtils.get_icon("mActionAddDefaultCarbonLayer.svg")
+        self.btn_add_default_carbon.setIcon(add_default_icon)
         self.btn_add_default_carbon.setMenu(QtWidgets.QMenu(self))
         items = settings_manager.get_default_layers("ncs_carbon")
         for item in items:
