@@ -2267,9 +2267,9 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             priority_layers = settings_manager.get_priority_layers()
             for priority_layer in priority_layers:
-                if priority_layer['path'].startswith("cplus://"):
-                    for group in priority_layer['groups']:
-                        if int(group['value']) > 0:
+                if priority_layer["path"].startswith("cplus://"):
+                    for group in priority_layer["groups"]:
+                        if int(group["value"]) > 0:
                             is_online_processing = True
                             break
 

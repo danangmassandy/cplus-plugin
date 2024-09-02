@@ -730,4 +730,3 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
         self.__update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
-
