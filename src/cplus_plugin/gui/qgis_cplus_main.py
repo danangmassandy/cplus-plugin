@@ -5,6 +5,7 @@
 """
 
 import datetime
+import json
 import os
 import uuid
 from functools import partial
@@ -2232,6 +2233,40 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
 
             else:
                 self.message_bar.clearWidgets()
+
+        if index == 3:
+            analysis_activities = [
+                item.activity
+                for item in self.activity_widget.selected_activity_items()
+                if item.isEnabled()
+            ]
+            is_online_processing = False
+            for activity in analysis_activities:
+                for pathway in activity.pathways:
+                    if pathway.path.startswith("cplus://"):
+                        is_online_processing = True
+                        break
+                    else:
+                        for carbon_path in pathway.carbon_paths:
+                            if carbon_path.startswith("cplus://"):
+                                is_online_processing = True
+                                break
+
+            priority_layers = settings_manager.get_priority_layers()
+            for priority_layer in priority_layers:
+                if priority_layer['path'].startswith("cplus://"):
+                    for group in priority_layer['groups']:
+                        if int(group['value']) > 0:
+                            is_online_processing = True
+                            break
+
+            if analysis_activities:
+                if is_online_processing:
+                    self.processing_type.setChecked(True)
+                    self.processing_type.setEnabled(False)
+                else:
+                    self.processing_type.setChecked(False)
+                    self.processing_type.setEnabled(True)
 
     def open_settings(self):
         """Options the CPLUS settings in the QGIS options dialog."""
