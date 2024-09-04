@@ -497,6 +497,7 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             activity["path"] = ""
             for pathway in activity["pathways"]:
                 if pathway:
+                    self.log_message(json.dumps(todict(pathway), cls=CustomJsonEncoder))
                     if pathway["path"] and os.path.exists(pathway["path"]):
                         if self.path_to_layer_mapping.get(pathway["path"], None):
                             pathway["uuid"] = self.path_to_layer_mapping.get(

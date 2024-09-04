@@ -7,6 +7,7 @@
 import datetime
 import json
 import os
+import typing
 import uuid
 from dateutil import tz
 from functools import partial
@@ -196,9 +197,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
         )
 
     def processing_options_changed(self):
-        """
-        Handles selected processing changes
-        """
+        """Handles selected processing changes"""
 
         settings_manager.set_value(
             Settings.PROCESSING_TYPE, self.processing_type.isChecked()
@@ -273,7 +272,7 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                     )
                 else:
                     message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-            except json.decoder.JSONDecodeError:
+            except Exception:
                 message_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             message = (
                 f"{self.log_text_box.toPlainText()} "
@@ -1672,9 +1671,14 @@ class QgisCplusMain(QtWidgets.QDockWidget, WidgetUi):
                 )
             )
 
-    def task_terminated(self, task):
+    def task_terminated(
+        self, task: typing.Union[ScenarioAnalysisTask, ScenarioAnalysisTaskApiClient]
+    ):
         """Handles logging of the scenario analysis task status
         after it has been terminated.
+
+        :param task: Task that was terminated
+        :type task: typing.Union[ScenarioAnalysisTask, ScenarioAnalysisTaskApiClient]
         """
         task.on_terminated()
         log(f"Main task terminated")
