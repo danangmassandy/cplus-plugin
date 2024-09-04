@@ -496,31 +496,37 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask):
             activity["layer_type"] = 0
             activity["path"] = ""
             for pathway in activity["pathways"]:
-                if pathway:
-                    self.log_message(json.dumps(todict(pathway), cls=CustomJsonEncoder))
-                    if pathway["path"] and os.path.exists(pathway["path"]):
-                        if self.path_to_layer_mapping.get(pathway["path"], None):
-                            pathway["uuid"] = self.path_to_layer_mapping.get(
-                                pathway["path"]
-                            )["uuid"]
-                            pathway["layer_uuid"] = pathway["uuid"]
-                            pathway["layer_type"] = 0
+                if pathway is None:
+                    continue
+                path = pathway["path"]
+                if path.startswith("cplus://"):
+                    pathway["layer_uuid"] = path.replace("cplus://", "")
+                    pathway["layer_type"] = 0
+                elif path and os.path.exists(path):
+                    if self.path_to_layer_mapping.get(path, None):
+                        pathway["uuid"] = self.path_to_layer_mapping.get(path)["uuid"]
+                        pathway["layer_uuid"] = pathway["uuid"]
+                        pathway["layer_type"] = 0
 
-                    carbon_uuids = []
-                    for carbon_path in pathway["carbon_paths"]:
-                        if os.path.exists(carbon_path):
-                            if self.path_to_layer_mapping.get(carbon_path, None):
-                                carbon_uuids.append(
-                                    self.path_to_layer_mapping.get(carbon_path)["uuid"]
-                                )
-                    pathway["carbon_paths"] = []
-                    pathway["carbon_uuids"] = carbon_uuids
-                    pathway["path"] = ""
+                carbon_uuids = []
+                for carbon_path in pathway["carbon_paths"]:
+                    if carbon_path.startswith("cplus://"):
+                        names = carbon_path.split("/")
+                        carbon_uuids.append(names[-2])
+                    elif os.path.exists(carbon_path):
+                        if self.path_to_layer_mapping.get(carbon_path, None):
+                            carbon_uuids.append(
+                                self.path_to_layer_mapping.get(carbon_path)["uuid"]
+                            )
+                pathway["carbon_paths"] = []
+                pathway["carbon_uuids"] = carbon_uuids
+                pathway["path"] = ""
             new_priority_layers = []
             for priority_layer in activity["priority_layers"]:
-                if priority_layer:
-                    priority_layer["path"] = ""
-                    new_priority_layers.append(priority_layer)
+                if priority_layer is None:
+                    continue
+                priority_layer["path"] = ""
+                new_priority_layers.append(priority_layer)
             activity["priority_layers"] = new_priority_layers
 
         self.scenario_detail = {
