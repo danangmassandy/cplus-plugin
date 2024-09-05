@@ -31,7 +31,6 @@ from .definitions.defaults import PRIORITY_LAYERS
 from .models.base import (
     Activity,
     NcsPathway,
-    PriorityLayerType,
     Scenario,
     ScenarioResult,
     SpatialExtent,
@@ -242,6 +241,8 @@ class Settings(enum.Enum):
     DEBUG = "debug"
     BASE_API_URL = "base_api_url"
 
+    ACTIVE_ONLINE_TASK = "active_online_task"
+
 
 class SettingsManager(QtCore.QObject):
     """Manages saving/loading settings for the plugin in QgsSettings."""
@@ -253,6 +254,7 @@ class SettingsManager(QtCore.QObject):
     PRIORITY_LAYERS_GROUP_NAME: str = "priority_layers"
     NCS_PATHWAY_BASE: str = "ncs_pathways"
     LAYER_MAPPING_BASE: str = "layer_mapping"
+    ONLINE_TASK_BASE: str = "online_task"
 
     ACTIVITY_BASE: str = "activities"
 
@@ -423,11 +425,11 @@ class SettingsManager(QtCore.QObject):
         """Saves the scenario extent into plugin settings
         using the provided settings group key.
 
-        :param key: Scenario extent
-        :type key: SpatialExtent
+        :param key: QgsSettings group key
+        :type key: str
 
-        :param extent: QgsSettings group key
-        :type extent: str
+        :param extent: Scenario extent
+        :type extent: SpatialExtent
 
         Args:
             extent (SpatialExtent): Scenario extent
@@ -1406,6 +1408,45 @@ class SettingsManager(QtCore.QObject):
         npv_collection_dict = activity_npv_collection_to_dict(npv_collection)
         npv_collection_str = json.dumps(npv_collection_dict)
         self.set_value(NPV_COLLECTION_PROPERTY, npv_collection_str)
+
+    def save_online_scenario(self, scenario_uuid):
+        """Save the passed scenario settings into the plugin settings as online tasl
+
+        :param scenario_uuid: Scenario UUID
+        :type scenario_uuid: str
+        """
+        settings_manager.set_value(self.ONLINE_TASK_BASE, scenario_uuid)
+
+    def _get_online_tasks_settings_base(self) -> str:
+        """Returns the path for Online Task settings.
+
+        :returns: Base path to Online Task group.
+        :rtype: str
+        """
+        return f"{self.BASE_GROUP_NAME}"
+
+    def get_running_online_scenario(self) -> typing.Dict:
+        """Retrieves running online scenario UUID.
+
+        :returns: Scenario settings instance
+        :rtype: ScenarioSettings
+        """
+
+        scenario_settings_key = self._get_online_tasks_settings_base()
+        with qgis_settings(scenario_settings_key) as settings:
+            return settings.value(self.ONLINE_TASK_BASE)
+
+    def delete_online_task(self):
+        """Delete the online task with the passed scenarion id.
+
+        :param scenario_id: Scenario identifier
+        :type scenario_id: str
+        """
+        log("delete online task")
+        with qgis_settings(self.BASE_GROUP_NAME) as settings:
+            a = settings.value(self.ONLINE_TASK_BASE)
+            log(a)
+            settings.remove(self.ONLINE_TASK_BASE)
 
 
 settings_manager = SettingsManager()

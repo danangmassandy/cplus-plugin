@@ -16,6 +16,7 @@ from ..definitions.defaults import BASE_API_URL
 
 JOB_COMPLETED_STATUS = "Completed"
 JOB_CANCELLED_STATUS = "Cancelled"
+JOB_RUNNING_STATUS = "Running"
 JOB_STOPPED_STATUS = "Stopped"
 CHUNK_SIZE = 100 * 1024 * 1024
 
@@ -217,15 +218,6 @@ class CplusApiUrl:
     def scenario_output_list(self, scenario_uuid):
         return f"{self.base_url}/scenario_output/{scenario_uuid}/list/?download_all=true&page=1&page_size=100"
 
-    def scenario_history_list(self, page=1, page_size=10, filters={}):
-        params = f"page={page}&page_size={page_size}"
-        for key, filter in filters.items():
-            params = params + f"&{key}={filter}"
-        return f"{self.base_url}/scenario/history/?{params}"
-
-    def scenario_delete(self, scenario_uuid):
-        return f"{self.base_url}/scenario/{scenario_uuid}/detail/"
-
 
 class CplusApiRequest:
     """Request to Cplus API."""
@@ -239,13 +231,13 @@ class CplusApiRequest:
         """GET requests."""
         return requests.get(url, headers=self.urls.headers)
 
-    def delete(self, url):
-        """DELETE requests."""
-        return requests.delete(url, headers=self.urls.headers)
-
     def post(self, url, data: json):
         """GET requests."""
         return requests.post(url, json=data, headers=self.urls.headers)
+
+    def delete(self, url):
+        """DELETE requests."""
+        return requests.delete(url, headers=self.urls.headers)
 
     def get_layer_detail(self, layer_uuid):
         response = self.get(self.urls.layer_detail(layer_uuid))
@@ -331,35 +323,39 @@ class CplusApiRequest:
             raise CplusApiRequestError(result.get("detail", ""))
         return result
 
-    def fetch_scenario_history(self, page=1, page_size=10):
-        filters = {"status": "Completed"}
+    def build_scenario_from_scenario_json(self, scenario_json):
+        """Build scenario object from scenario JSON"""
+        detail = scenario_json["detail"]
+        extent = []
+        if "extent_project" in detail:
+            extent = detail.get("extent_project", [])
+        else:
+            extent = detail.get("extent", [])
+
+        scenario = Scenario(
+            uuid=uuid.uuid4(),
+            name=detail.get("scenario_name", ""),
+            description=detail.get("scenario_desc", ""),
+            extent=SpatialExtent(bbox=extent),
+            server_uuid=uuid.UUID(scenario_json["uuid"]),
+            activities=[
+                Activity.from_dict(activity) for activity in detail["activities"]
+            ],
+            weighted_activities=[],
+            priority_layer_groups=detail["priority_layer_groups"],
+        )
+        return scenario
+
+    def fetch_scenario_history(self, page=1, page_size=10, status="Completed"):
+        filters = {"status": status}
         response = self.get(self.urls.scenario_history_list(page, page_size, filters))
         result = response.json()
         if response.status_code != 200:
             raise CplusApiRequestError(result.get("detail", ""))
         scenario_results = []
         for item in result["results"]:
-            detail = item["detail"]
-            extent = []
-            if "extent_project" in detail:
-                extent = detail.get("extent_project", [])
-            else:
-                extent = detail.get("extent", [])
-            scenario_results.append(
-                Scenario(
-                    uuid=uuid.uuid4(),
-                    name=detail.get("scenario_name", ""),
-                    description=detail.get("scenario_desc", ""),
-                    extent=SpatialExtent(bbox=extent),
-                    server_uuid=uuid.UUID(item["uuid"]),
-                    activities=[
-                        Activity.from_dict(activity)
-                        for activity in detail["activities"]
-                    ],
-                    weighted_activities=[],
-                    priority_layer_groups=detail["priority_layer_groups"],
-                )
-            )
+            scenario = self.build_scenario_from_scenario_json(item)
+            scenario_results.append(scenario)
         return scenario_results
 
     def delete_scenario(self, scenario_uuid):

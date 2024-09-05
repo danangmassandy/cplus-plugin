@@ -13,7 +13,7 @@ from .request import (
     JOB_STOPPED_STATUS,
     CHUNK_SIZE,
 )
-from ..conf import settings_manager, Settings
+from ..conf import settings_manager, Settings, ScenarioSettings
 from ..tasks import ScenarioAnalysisTask
 from ..utils import FileUtils, CustomJsonEncoder, todict
 from ..api.base import BaseFetchScenarioOutput
@@ -87,24 +87,28 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
 
     def on_terminated(self):
         """Called when the task is terminated."""
-        # check if there is ongoing upload
-        layer_mapping = settings_manager.get_all_layer_mapping()
-        for identifier, layer in layer_mapping.items():
-            if "upload_id" not in layer:
-                continue
-            self.log_message(f"Cancelling upload file: {layer['path']} ")
-            try:
-                self.request.abort_upload_layer(layer["uuid"], layer["upload_id"])
-                settings_manager.remove_layer_mapping(identifier)
-            except Exception as ex:
-                self.log_message(f"Problem aborting upload layer: {ex}")
-        self.log_message(f"Cancel scenario {self.scenario_api_uuid}")
-        if self.scenario_api_uuid and self.scenario_status not in [
-            JOB_COMPLETED_STATUS,
-            JOB_STOPPED_STATUS,
-        ]:
-            self.request.cancel_scenario(self.scenario_api_uuid)
-        super().on_terminated()
+
+        hide_task = getattr(self, "hide_task", False)
+        if not hide_task:
+            # check if there is ongoing upload
+            layer_mapping = settings_manager.get_all_layer_mapping()
+            for identifier, layer in layer_mapping.items():
+                if "upload_id" not in layer:
+                    continue
+                self.log_message(f"Cancelling upload file: {layer['path']} ")
+                try:
+                    self.request.abort_upload_layer(layer["uuid"], layer["upload_id"])
+                    settings_manager.remove_layer_mapping(identifier)
+                except Exception as ex:
+                    self.log_message(f"Problem aborting upload layer: {ex}")
+            self.log_message(f"Cancel scenario {self.scenario_api_uuid}")
+            if self.scenario_api_uuid and self.scenario_status not in [
+                JOB_COMPLETED_STATUS,
+                JOB_STOPPED_STATUS,
+            ]:
+                self.request.cancel_scenario(self.scenario_api_uuid)
+                settings_manager.delete_online_task()
+        super().on_terminated(hide=hide_task)
 
     def run(self) -> bool:
         """Run scenario analysis using API."""
@@ -566,6 +570,10 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         )
         scenario_uuid = self.request.submit_scenario_detail(self.scenario_detail)
         self.scenario_api_uuid = scenario_uuid
+        scenario_json = self.request.fetch_scenario_detail(scenario_uuid)
+        scenario_obj = self.request.build_scenario_from_scenario_json(scenario_json)
+        settings_manager.save_scenario(scenario_obj)
+        settings_manager.save_online_scenario(str(scenario_obj.uuid))
 
         # execute scenario detail
         self.request.execute_scenario(scenario_uuid)
@@ -634,6 +642,12 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
                 }
             )
 
+    def delete_online_task(self):
+        running_online_scenario_uuid = settings_manager.get_running_online_scenario()
+        online_task = settings_manager.get_scenario(running_online_scenario_uuid)
+        if online_task.server_uuid == self.scenario_api_uuid:
+            settings_manager.delete_online_task()
+
     def _retrieve_scenario_outputs(self, scenario_uuid):
         """
         Set scenario output object based on scenario UUID
@@ -664,3 +678,4 @@ class ScenarioAnalysisTaskApiClient(ScenarioAnalysisTask, BaseFetchScenarioOutpu
         self._update_scenario_status(
             {"progress_text": "Finished downloading output files", "progress": 100}
         )
+        self.delete_online_task()
